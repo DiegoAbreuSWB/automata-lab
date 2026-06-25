@@ -1,0 +1,1662 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Autômata — laboratório de autômatos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+
+<style>
+  :root{
+    --paper:#FBFAF7;--grid:#ECEAE2;--grid-major:#E0DDD2;--ink:#16202B;--ink-soft:#5A6470;
+    --line:#E6E3DB;--line-strong:#D6D2C6;--rail:#141C25;--rail-soft:#9AA6B2;--rail-line:#27313D;
+    --accept:#0E8A5F;--accept-soft:#E3F4EC;--reject:#CB4242;--reject-soft:#FBE9E7;
+    --active:#E69500;--active-soft:#FCEFD4;--primary:#3B4DAE;--primary-soft:#E9EBF8;--white:#fff;
+    --mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+    --disp:"Space Grotesk",system-ui,sans-serif;--ui:"Inter",system-ui,sans-serif;
+    --shadow:0 1px 2px rgba(20,28,37,.06),0 8px 24px -12px rgba(20,28,37,.18);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{font-family:var(--ui);color:var(--ink);background:var(--paper);-webkit-font-smoothing:antialiased;overflow:hidden}
+  button{font-family:inherit;cursor:pointer}
+  .app{display:grid;grid-template-columns:60px 1fr 326px;grid-template-rows:auto 1fr;height:100vh}
+
+  header{grid-column:1/4;display:flex;align-items:center;gap:14px;padding:10px 16px;background:var(--white);border-bottom:1px solid var(--line);z-index:5}
+  .brand{display:flex;align-items:baseline;gap:9px}
+  .brand b{font-family:var(--disp);font-weight:700;font-size:18px;letter-spacing:-.01em}
+  .brand .acc{color:var(--primary)}
+  .brand span{font-family:var(--mono);font-size:11px;color:var(--ink-soft);letter-spacing:.04em}
+  .seg{display:inline-flex;border:1px solid var(--line-strong);border-radius:8px;overflow:hidden;margin-left:6px}
+  .seg button{border:none;background:var(--white);color:var(--ink-soft);font-family:var(--mono);font-size:12px;font-weight:600;padding:7px 13px}
+  .seg button.on{background:var(--ink);color:#fff}
+  .seg button:not(.on):hover{background:#f1efe9}
+  .top-actions{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}
+  .btn{border:1px solid var(--line-strong);background:var(--white);color:var(--ink);border-radius:8px;padding:7px 11px;font-size:12.5px;font-weight:500;display:inline-flex;align-items:center;gap:6px;transition:.12s}
+  .btn:hover{border-color:var(--ink);background:#fbfbfa}
+  .btn:active{transform:translateY(1px)}
+  .btn.ghost{border-color:transparent;background:transparent;color:var(--ink-soft)}
+  .btn.ghost:hover{background:#f1efe9;color:var(--ink)}
+  .btn svg{width:14px;height:14px}
+  select.btn{appearance:none;padding-right:24px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'%3E%3Cpath d='M2 4l3 3 3-3' stroke='%2316202B' stroke-width='1.4' fill='none'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 8px center}
+
+  .rail{grid-row:2;background:var(--rail);display:flex;flex-direction:column;align-items:center;gap:6px;padding:12px 0}
+  .tool{width:40px;height:40px;border-radius:9px;border:1px solid transparent;background:transparent;color:var(--rail-soft);display:grid;place-items:center;position:relative;transition:.12s}
+  .tool:hover{background:#1d2832;color:#fff}
+  .tool.active{background:var(--primary);color:#fff;border-color:#5566c4}
+  .tool svg{width:20px;height:20px}
+  .tool[data-tip]:hover::after{content:attr(data-tip);position:absolute;left:48px;top:50%;transform:translateY(-50%);background:var(--ink);color:#fff;font-size:11px;font-family:var(--ui);padding:5px 8px;border-radius:6px;white-space:nowrap;z-index:20;box-shadow:var(--shadow)}
+  .rail-sep{width:26px;height:1px;background:var(--rail-line);margin:4px 0}
+
+  .stage{grid-row:2;position:relative;overflow:hidden;background:var(--paper)}
+  .stage svg{display:block;width:100%;height:100%;touch-action:none}
+  .hint{position:absolute;left:50%;top:14px;transform:translateX(-50%);font-family:var(--mono);font-size:12px;color:var(--ink-soft);background:rgba(251,250,247,.92);border:1px solid var(--line);border-radius:20px;padding:6px 14px;pointer-events:none;backdrop-filter:blur(4px);max-width:90%;text-align:center}
+  .hint b{color:var(--primary);font-weight:700}
+  .floating-input{position:absolute;display:none;z-index:30;background:var(--white);border:1.5px solid var(--primary);border-radius:8px;box-shadow:var(--shadow);padding:6px;align-items:center;gap:6px}
+  .floating-input input{border:none;outline:none;font-family:var(--mono);font-size:14px;width:140px;color:var(--ink)}
+  .floating-input button{border:none;background:var(--primary);color:#fff;border-radius:6px;width:26px;height:26px;font-size:14px;display:grid;place-items:center}
+
+  .empty-note{position:absolute;inset:0;display:grid;place-items:center;pointer-events:none}
+  .empty-note div{text-align:center;color:var(--line-strong);font-family:var(--disp);font-weight:600;font-size:15px;max-width:300px;line-height:1.5}
+  .empty-note small{display:block;font-family:var(--mono);font-weight:400;font-size:12px;color:#c7c3b8;margin-top:8px}
+
+  .panel{grid-row:2;background:var(--white);border-left:1px solid var(--line);overflow-y:auto;display:flex;flex-direction:column}
+  .sec{padding:16px;border-bottom:1px solid var(--line)}
+  .sec h3{margin:0 0 11px;font-family:var(--disp);font-size:11px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-soft);display:flex;align-items:center;gap:7px}
+  .sec h3 .dot{width:6px;height:6px;border-radius:50%;background:var(--primary)}
+
+  .label{font-family:var(--mono);font-size:11px;color:var(--ink-soft);margin-bottom:7px}
+  .field{display:flex;gap:7px;margin-bottom:9px}
+  .field input[type=text]{flex:1;min-width:0;border:1px solid var(--line-strong);border-radius:8px;padding:9px 11px;font-family:var(--mono);font-size:13.5px;color:var(--ink);outline:none;transition:.12s}
+  .field input[type=text]:focus{border-color:var(--primary);box-shadow:0 0 0 3px var(--primary-soft)}
+  .run-btn{border:none;background:var(--ink);color:#fff;border-radius:8px;padding:9px 14px;font-weight:600;font-size:13px;display:inline-flex;align-items:center;gap:6px;flex-shrink:0}
+  .run-btn:hover{background:#243240}
+  .run-btn svg{width:14px;height:14px}
+
+  .verdict{display:none;align-items:center;gap:9px;border-radius:9px;padding:10px 12px;font-weight:600;font-size:13.5px;margin-top:2px}
+  .verdict.accept{display:flex;background:var(--accept-soft);color:var(--accept)}
+  .verdict.reject{display:flex;background:var(--reject-soft);color:var(--reject)}
+  .verdict .badge{font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.05em;margin-left:auto;padding:2px 7px;border-radius:5px;background:rgba(255,255,255,.6)}
+
+  .runwrap{display:flex;gap:16px;align-items:flex-start}
+  .runwrap .left{flex:1;min-width:0}
+  .tape{display:flex;gap:4px;flex-wrap:wrap;margin:11px 0 9px;min-height:38px;align-items:center}
+  .cell{width:30px;height:36px;border:1.5px solid var(--line-strong);border-radius:7px;display:grid;place-items:center;font-family:var(--mono);font-weight:600;font-size:15px;color:var(--ink-soft);background:#fcfbf9;transition:.15s}
+  .cell.done{color:var(--ink);background:#fff}
+  .cell.head{border-color:var(--active);color:var(--active);background:var(--active-soft);box-shadow:0 0 0 3px var(--active-soft)}
+  .cell.epsilon{color:#c7c3b8;font-style:italic}
+  .step-row{display:flex;align-items:center;gap:7px;margin-bottom:10px}
+  .sbtn{border:1px solid var(--line-strong);background:#fff;border-radius:7px;width:34px;height:34px;display:grid;place-items:center;color:var(--ink)}
+  .sbtn:hover{border-color:var(--ink)}
+  .sbtn:disabled{opacity:.35;cursor:not-allowed}
+  .sbtn.play{background:var(--primary);border-color:var(--primary);color:#fff;width:auto;padding:0 12px;gap:6px;font-size:12.5px;font-weight:600}
+  .sbtn svg{width:15px;height:15px}
+  .activeset{font-family:var(--mono);font-size:12px;color:var(--ink-soft);line-height:1.7}
+  .activeset .chip{display:inline-block;background:var(--active-soft);color:#9a6800;border:1px solid #f0d79a;border-radius:6px;padding:1px 7px;margin:2px 3px 0 0;font-weight:600}
+  .activeset .none{color:var(--reject)}
+  .activeset .desc{color:var(--primary);background:var(--primary-soft);border:1px solid #cfd4f0;border-radius:6px;padding:1px 7px;display:inline-block;margin-top:3px}
+
+  .stk-wrap{flex-shrink:0;display:none}
+  .stk-label{font-family:var(--disp);font-size:9.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-soft);margin:11px 0 6px;text-align:center}
+  .stk{display:flex;flex-direction:column;gap:3px;width:54px}
+  .stk-cell{height:28px;border:1.5px solid var(--line-strong);border-radius:6px;display:grid;place-items:center;font-family:var(--mono);font-weight:600;font-size:13px;background:#fff;color:var(--ink);position:relative}
+  .stk-cell.top{border-color:var(--primary);color:var(--primary);box-shadow:0 0 0 3px var(--primary-soft)}
+  .stk-cell.top::after{content:"◄ topo";position:absolute;left:62px;font-family:var(--ui);font-size:9.5px;color:var(--primary);white-space:nowrap}
+  .stk-cell.bottom::after{content:"fundo";position:absolute;left:62px;font-family:var(--ui);font-size:9.5px;color:var(--ink-soft);white-space:nowrap}
+  .stk-empty{font-family:var(--mono);font-size:11px;color:var(--ink-soft);font-style:italic;text-align:center;padding:8px 0;border:1.5px dashed var(--line-strong);border-radius:6px;width:54px}
+
+  .batch-in{width:100%;border:1px solid var(--line-strong);border-radius:8px;padding:9px 11px;font-family:var(--mono);font-size:13px;resize:vertical;min-height:74px;outline:none;color:var(--ink)}
+  .batch-in:focus{border-color:var(--primary);box-shadow:0 0 0 3px var(--primary-soft)}
+  table.results{width:100%;border-collapse:collapse;margin-top:11px;font-size:13px}
+  table.results th{text-align:left;font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-soft);font-weight:700;padding:0 0 6px;border-bottom:1px solid var(--line)}
+  table.results td{padding:7px 0;border-bottom:1px solid var(--line);font-family:var(--mono);vertical-align:middle}
+  table.results td.in{color:var(--ink)}
+  table.results td.in .eps{color:#c7c3b8;font-style:italic}
+  .pill{font-size:11px;font-weight:700;padding:3px 9px;border-radius:20px;font-family:var(--mono);letter-spacing:.03em}
+  .pill.a{background:var(--accept-soft);color:var(--accept)}
+  .pill.r{background:var(--reject-soft);color:var(--reject)}
+
+  .toggles{display:flex;gap:7px;flex-wrap:wrap}
+  .tg{border:1px solid var(--line-strong);background:#fff;border-radius:7px;padding:7px 10px;font-size:12px;font-weight:500;display:inline-flex;gap:6px;align-items:center}
+  .tg:hover{border-color:var(--ink)}
+  .tg.on{background:var(--primary);border-color:var(--primary);color:#fff}
+  .tg.danger:hover{border-color:var(--reject);color:var(--reject)}
+  .nosel{font-size:12.5px;color:var(--ink-soft);font-style:italic;line-height:1.5}
+
+  .stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .stat{border:1px solid var(--line);border-radius:8px;padding:9px 11px;background:#fcfbf9}
+  .stat .k{font-family:var(--mono);font-size:10px;letter-spacing:.05em;text-transform:uppercase;color:var(--ink-soft)}
+  .stat .v{font-family:var(--mono);font-size:14px;font-weight:600;margin-top:3px;color:var(--ink);word-break:break-all}
+  .stat .v.det{color:var(--accept)}
+  .stat .v.nondet{color:var(--active)}
+
+  .grammar{font-family:var(--mono);font-size:13px;margin-top:12px;line-height:1.9;color:var(--ink)}
+  .grammar .meta{font-family:var(--ui);font-size:11px;color:var(--ink-soft);line-height:1.6;margin-bottom:10px}
+  .grammar .prod{padding:1px 0}
+  .grammar .lhs{color:var(--primary);font-weight:700}
+  .grammar .arrow{color:var(--ink-soft);margin:0 5px}
+  .grammar .term{color:var(--accept);font-weight:700}
+  .grammar .eps{color:#b9b4a7;font-style:italic}
+  .grammar .note{font-family:var(--ui);font-size:11px;color:var(--ink-soft);margin-top:11px;line-height:1.55;border-top:1px solid var(--line);padding-top:9px}
+
+  .legend{display:flex;flex-direction:column;gap:7px;font-size:12px;color:var(--ink-soft)}
+  .legend>div{display:flex;align-items:center;gap:9px}
+  .lg-state{width:18px;height:18px;border-radius:50%;border:2px solid var(--ink);flex-shrink:0}
+  .lg-state.fin{box-shadow:0 0 0 2px #fff,0 0 0 4px var(--ink)}
+  .lg-state.act{border-color:var(--active);background:var(--active-soft)}
+  .lg-arrow{width:18px;flex-shrink:0;display:grid;place-items:center;color:var(--primary);font-weight:700}
+
+  kbd{font-family:var(--mono);font-size:10.5px;background:#f1efe9;border:1px solid var(--line-strong);border-bottom-width:2px;border-radius:5px;padding:1px 5px;color:var(--ink)}
+
+  .btn.primary{background:var(--primary);border-color:var(--primary);color:#fff}
+  .btn.primary:hover{background:#33429a;border-color:#33429a}
+  .modal-backdrop{position:fixed;inset:0;background:rgba(20,28,37,.45);backdrop-filter:blur(2px);display:none;align-items:center;justify-content:center;z-index:100;padding:24px}
+  .modal-backdrop.open{display:flex}
+  .modal{background:var(--white);border-radius:16px;max-width:660px;width:100%;max-height:88vh;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 24px 70px -20px rgba(0,0,0,.45)}
+  .modal-head{display:flex;align-items:center;gap:12px;padding:17px 22px 0}
+  .modal-head h2{margin:0;font-family:var(--disp);font-size:18px;letter-spacing:-.01em}
+  .modal-head .tag{font-family:var(--mono);font-size:11px;color:#fff;background:var(--primary);padding:3px 8px;border-radius:6px;font-weight:700}
+  .modal-close{margin-left:auto;border:none;background:#f1efe9;width:32px;height:32px;border-radius:8px;font-size:20px;line-height:1;color:var(--ink-soft)}
+  .modal-close:hover{background:#e7e4dc;color:var(--ink)}
+  .tut-tabs{display:flex;gap:6px;padding:14px 22px 0;flex-wrap:wrap}
+  .tut-tabs button{border:1px solid var(--line-strong);background:#fff;border-radius:20px;padding:5px 13px;font-size:12px;font-weight:600;color:var(--ink-soft)}
+  .tut-tabs button.on{background:var(--primary);color:#fff;border-color:var(--primary)}
+  .tut-tabs button:not(.on):hover{background:#f1efe9}
+  .modal-body{padding:16px 22px;overflow-y:auto;font-size:14px;line-height:1.62;color:var(--ink)}
+  .modal-body h4{font-family:var(--disp);font-size:12px;margin:16px 0 7px;color:var(--primary);text-transform:uppercase;letter-spacing:.06em}
+  .modal-body p{margin:0 0 10px}
+  .modal-body code{font-family:var(--mono);background:#f4f2ec;padding:1px 5px;border-radius:4px;font-size:12.5px;color:var(--ink)}
+  .modal-body ul{margin:0 0 10px;padding-left:18px}
+  .modal-body li{margin-bottom:5px}
+  .tut-tuple{background:#f7f5ef;border:1px solid var(--line);border-radius:10px;padding:11px 14px;font-family:var(--mono);font-size:12.5px;margin:4px 0 12px;line-height:1.7;color:var(--ink)}
+  .modal-foot{padding:13px 22px;border-top:1px solid var(--line);display:flex;gap:8px;align-items:center}
+  .modal-foot .spacer{flex:1}
+
+  @media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
+  @media (max-width:900px){
+    .app{grid-template-columns:52px 1fr;grid-template-rows:auto 1.1fr .9fr}
+    .panel{grid-row:3;grid-column:1/3;border-left:none;border-top:1px solid var(--line)}
+    .stage{grid-column:2}
+  }
+</style>
+
+<div class="app">
+  <header>
+    <div class="brand">
+      <b>Autô<span class="acc">mata</span></b>
+      <span>laboratório de autômatos</span>
+    </div>
+    <div class="seg" id="seg">
+      <button data-m="fa" class="on">AF</button>
+      <button data-m="pda">AP</button>
+      <button data-m="tm">MT</button>
+    </div>
+    <div class="top-actions">
+      <button class="btn primary" id="tutorialBtn">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 4.5C8 3.5 7 2.5 4.5 2.5S2 3 2 3v9s.5-.5 2.5-.5S8 12.5 8 13.5m0-9C8 3.5 9 2.5 11.5 2.5S14 3 14 3v9s-.5-.5-2.5-.5S8 12.5 8 13.5m0-9v9"/></svg>Tutorial
+      </button>
+      <select class="btn" id="examples" title="Carregar um exemplo"></select>
+      <button class="btn ghost" id="export">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 2v8m0 0L5 7m3 3l3-3M3 12v1a1 1 0 001 1h8a1 1 0 001-1v-1"/></svg>Salvar
+      </button>
+      <button class="btn ghost" id="import">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 10V2m0 8L5 7m3 3l3-3M3 12v1a1 1 0 001 1h8a1 1 0 001-1v-1" transform="rotate(180 8 8)"/></svg>Abrir
+      </button>
+      <input type="file" id="file" accept=".json" hidden>
+      <button class="btn ghost" id="clear">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 4h10M6 4V3a1 1 0 011-1h2a1 1 0 011 1v1m1 0v8a1 1 0 01-1 1H5a1 1 0 01-1-1V4"/></svg>Limpar
+      </button>
+    </div>
+  </header>
+
+  <nav class="rail">
+    <button class="tool active" data-tool="select" data-tip="Selecionar e mover (V)">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M5 3l14 7-6 1.5L10 18 5 3z"/></svg>
+    </button>
+    <button class="tool" data-tool="state" data-tip="Adicionar estado (S)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="7"/><path d="M12 9v6M9 12h6"/></svg>
+    </button>
+    <button class="tool" data-tool="trans" data-tip="Adicionar transição (T)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="12" r="2.5"/><path d="M8.6 12h6.4m0 0l-2-2m2 2l-2 2"/></svg>
+    </button>
+    <div class="rail-sep"></div>
+    <button class="tool" data-tool="initial" data-tip="Definir estado inicial (I)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 12h11m0 0l-4-4m4 4l-4 4"/><circle cx="19" cy="12" r="1.4" fill="currentColor"/></svg>
+    </button>
+    <button class="tool" data-tool="final" data-tip="Alternar estado final (F)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4.5"/></svg>
+    </button>
+    <div class="rail-sep"></div>
+    <button class="tool" data-tool="delete" data-tip="Excluir (Del)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 7h14M9 7V5a1 1 0 011-1h4a1 1 0 011 1v2m2 0v11a1 1 0 01-1 1H7a1 1 0 01-1-1V7"/></svg>
+    </button>
+  </nav>
+
+  <div class="stage" id="stage">
+    <svg id="svg" xmlns="http://www.w3.org/2000/svg"></svg>
+    <div class="hint" id="hint"></div>
+    <div class="empty-note" id="emptyNote">
+      <div>Uma página em branco.
+        <small>Use "Adicionar estado" ou dê um duplo-clique aqui para criar o primeiro estado.</small>
+      </div>
+    </div>
+    <div class="floating-input" id="floatInput">
+      <input id="floatField" placeholder="a, b, ε" autocomplete="off">
+      <button id="floatOk">↵</button>
+    </div>
+  </div>
+
+  <aside class="panel">
+    <div class="sec" id="pdaConfig" style="display:none">
+      <h3><span class="dot"></span>Pilha &amp; aceitação</h3>
+      <div class="label">Símbolo inicial da pilha</div>
+      <div class="field"><input type="text" id="initStack" value="Z" style="max-width:90px"></div>
+      <div class="label" style="margin-top:4px">Critério de aceitação</div>
+      <div class="toggles">
+        <button class="tg on" data-acc="final">Estado final</button>
+        <button class="tg" data-acc="empty">Pilha vazia</button>
+      </div>
+    </div>
+
+    <div class="sec">
+      <h3><span class="dot"></span>Testar uma cadeia</h3>
+      <div class="field">
+        <input type="text" id="testStr" placeholder="ex.:  abba" autocomplete="off">
+        <button class="run-btn" id="runOne">
+          <svg viewBox="0 0 16 16" fill="currentColor"><path d="M4 3l9 5-9 5V3z"/></svg>Testar
+        </button>
+      </div>
+      <div class="verdict" id="verdict"></div>
+
+      <div class="step-row" style="margin-top:12px">
+        <button class="sbtn" id="stepFirst" title="Reiniciar">
+          <svg viewBox="0 0 16 16" fill="currentColor"><path d="M5 3v10H3.5V3H5zm8 0v10l-7-5 7-5z"/></svg>
+        </button>
+        <button class="sbtn" id="stepBack" title="Voltar passo">
+          <svg viewBox="0 0 16 16" fill="currentColor"><path d="M11 3v10l-7-5 7-5z"/></svg>
+        </button>
+        <button class="sbtn play" id="stepPlay"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M4 3l9 5-9 5V3z"/></svg>Passo a passo</button>
+        <button class="sbtn" id="stepFwd" title="Avançar passo">
+          <svg viewBox="0 0 16 16" fill="currentColor"><path d="M5 3l7 5-7 5V3z"/></svg>
+        </button>
+      </div>
+      <div class="runwrap">
+        <div class="left">
+          <div class="tape" id="tape"></div>
+          <div class="activeset" id="activeSet"></div>
+        </div>
+        <div class="stk-wrap" id="stackView"></div>
+      </div>
+    </div>
+
+    <div class="sec">
+      <h3><span class="dot"></span>Teste em lote</h3>
+      <textarea class="batch-in" id="batchIn" placeholder="Uma cadeia por linha"></textarea>
+      <button class="run-btn" id="runBatch" style="width:100%;justify-content:center;margin-top:8px">Testar todas</button>
+      <div id="batchOut"></div>
+    </div>
+
+    <div class="sec props" id="propsSec">
+      <h3><span class="dot"></span>Seleção</h3>
+      <div id="propsBody"><div class="nosel">Nada selecionado. Clique em um estado ou transição para editar.</div></div>
+    </div>
+
+    <div class="sec">
+      <h3><span class="dot"></span>Máquina</h3>
+      <div class="stat-grid">
+        <div class="stat"><div class="k">Estados</div><div class="v" id="mStates">0</div></div>
+        <div class="stat"><div class="k">Alfabeto</div><div class="v" id="mAlpha">∅</div></div>
+        <div class="stat"><div class="k">Transições</div><div class="v" id="mTrans">0</div></div>
+        <div class="stat"><div class="k">Tipo</div><div class="v" id="mType">—</div></div>
+      </div>
+    </div>
+
+    <div class="sec" id="grammarSec">
+      <h3><span class="dot"></span>Gramática regular</h3>
+      <button class="run-btn" id="genGrammar" style="width:100%;justify-content:center">Converter autômato → gramática</button>
+      <div id="grammarOut"></div>
+    </div>
+
+    <div class="sec">
+      <h3><span class="dot"></span>Legenda</h3>
+      <div id="legendBody"></div>
+    </div>
+  </aside>
+</div>
+
+<div class="modal-backdrop" id="tutModal">
+  <div class="modal">
+    <div class="modal-head">
+      <span class="tag" id="tutTag">AF</span>
+      <h2 id="tutTitle">Autômato Finito</h2>
+      <button class="modal-close" id="tutClose" title="Fechar">×</button>
+    </div>
+    <div class="tut-tabs" id="tutTabs">
+      <button data-t="fa" class="on">Finito</button>
+      <button data-t="pda">Pilha</button>
+      <button data-t="tm">Turing</button>
+      <button data-t="moore">Moore</button>
+      <button data-t="mealy">Mealy</button>
+    </div>
+    <div class="modal-body" id="tutBody"></div>
+    <div class="modal-foot">
+      <span style="font-size:12px;color:var(--ink-soft)">Dica: o menu <b>Exemplos…</b> traz máquinas prontas.</span>
+      <span class="spacer"></span>
+      <button class="btn" id="tutLoad">Abrir este modo</button>
+      <button class="run-btn" id="tutDone" style="background:var(--primary)">Entendi</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+  const EPS = "ε";
+  const BLANK = "□";
+  const R = 26;
+  const svg = document.getElementById("svg");
+  const stage = document.getElementById("stage");
+  const NS = "http://www.w3.org/2000/svg";
+
+  let machineType = "fa";        // "fa" | "pda"
+  let states = [];
+  let trans = [];                // FA: {id,from,to,sym} · PDA: {id,from,to,read,pop,push}
+  let initial = null;
+  let finals = new Set();
+  let nextId = 0;
+  let selected = null;
+  let tool = "select";
+  let sim = null;
+  let grammarShown = false;
+  let pdaInit = "Z";
+  let pdaAccept = "final";       // "final" | "empty"
+
+  function uid(){ return "s"+(nextId++); }
+  function stateById(id){ return states.find(s=>s.id===id); }
+
+  function svgPoint(evt){
+    const pt = svg.createSVGPoint();
+    pt.x = evt.clientX; pt.y = evt.clientY;
+    return pt.matrixTransform(svg.getScreenCTM().inverse());
+  }
+  function sizeViewBox(){
+    const r = stage.getBoundingClientRect();
+    svg.setAttribute("viewBox", `0 0 ${r.width} ${r.height}`);
+    svg.setAttribute("width", r.width); svg.setAttribute("height", r.height);
+  }
+
+  function edgeGroups(){
+    const m = new Map();
+    for(const t of trans){
+      const k = t.from+"→"+t.to;
+      if(!m.has(k)) m.set(k,{from:t.from,to:t.to,items:[]});
+      m.get(k).items.push(t);
+    }
+    return [...m.values()];
+  }
+  function hasReverse(from,to){ return trans.some(t=>t.from===to && t.to===from) && from!==to; }
+  function pdaLabel(t){
+    const r = t.read===EPS?"ε":t.read;
+    const p = t.pop===EPS?"ε":t.pop;
+    const pu = (!t.push||t.push==="")?"ε":t.push;
+    return `${r}, ${p} ; ${pu}`;
+  }
+  function tmLabel(t){
+    const d=v=>v===BLANK?"□":v;
+    return `${d(t.read)} ; ${d(t.write)} , ${t.move}`;
+  }
+  function mealyLabel(t){ return `${t.sym} / ${t.out===""?"ε":t.out}`; }
+  function edgeLabelLines(g){
+    if(machineType==="fa"||machineType==="moore") return [ g.items.map(t=>t.sym).join(", ") ];
+    if(machineType==="tm") return g.items.map(tmLabel);
+    if(machineType==="mealy") return g.items.map(mealyLabel);
+    return g.items.map(pdaLabel);
+  }
+
+  // ---------- render ----------
+  function render(){
+    sizeViewBox();
+    while(svg.firstChild) svg.removeChild(svg.firstChild);
+    const defs = el("defs");
+    defs.innerHTML = `
+      <pattern id="g" width="26" height="26" patternUnits="userSpaceOnUse"><path d="M26 0H0V26" fill="none" stroke="var(--grid)" stroke-width="1"/></pattern>
+      <pattern id="gM" width="130" height="130" patternUnits="userSpaceOnUse"><rect width="130" height="130" fill="url(#g)"/><path d="M130 0H0V130" fill="none" stroke="var(--grid-major)" stroke-width="1"/></pattern>
+      <marker id="arr" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto" markerUnits="userSpaceOnUse"><path d="M0 0L9 4.5L0 9 2.6 4.5z" fill="var(--ink)"/></marker>
+      <marker id="arrP" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto" markerUnits="userSpaceOnUse"><path d="M0 0L9 4.5L0 9 2.6 4.5z" fill="var(--primary)"/></marker>`;
+    svg.appendChild(defs);
+    svg.appendChild(el("rect",{x:0,y:0,width:"100%",height:"100%",fill:"url(#gM)"}));
+
+    let active=null;
+    if(sim){
+      if(sim.mode==="fa") active=sim.frames[sim.pos];
+      else if(sim.mode==="pda" && sim.path) active=new Set([sim.path[sim.pos].state]);
+      else if(sim.mode==="tm") active=new Set([sim.path[sim.pos].state]);
+      else if(sim.mode==="moore"||sim.mode==="mealy") active=new Set([sim.path[sim.pos].state]);
+    }
+    for(const g of edgeGroups()) drawEdge(g, edgeLabelLines(g));
+    if(initial!=null){
+      const s = stateById(initial);
+      if(s) svg.appendChild(el("path",{d:`M${s.x-R-26} ${s.y} L${s.x-R-3} ${s.y}`,stroke:"var(--primary)","stroke-width":2.2,fill:"none","marker-end":"url(#arrP)"}));
+    }
+    for(const s of states) drawState(s, active);
+
+    document.getElementById("emptyNote").style.display = states.length? "none":"grid";
+    updateStats();
+    if(grammarShown && machineType==="fa") generateGrammar();
+  }
+
+  function el(tag, attrs){
+    const e = document.createElementNS(NS, tag);
+    if(attrs) for(const k in attrs) e.setAttribute(k, attrs[k]);
+    return e;
+  }
+
+  function drawState(s, active){
+    const g = el("g",{class:"node",style:"cursor:pointer"});
+    g.dataset.id = s.id;
+    const isActive = active && active.has(s.id);
+    const isFinal = finals.has(s.id);
+    const isSel = selected && selected.type==="state" && selected.id===s.id;
+    const fill = isActive ? "var(--active-soft)" : "var(--white)";
+    let stroke = "var(--ink)";
+    if(isActive) stroke="var(--active)";
+    if(isSel) stroke="var(--primary)";
+    if(isActive) g.appendChild(el("circle",{cx:s.x,cy:s.y,r:R+5,fill:"none",stroke:"var(--active)","stroke-width":1.5,opacity:.4}));
+    g.appendChild(el("circle",{cx:s.x,cy:s.y,r:R,fill,stroke,"stroke-width":isSel?3:2.2}));
+    if(isFinal) g.appendChild(el("circle",{cx:s.x,cy:s.y,r:R-5,fill:"none",stroke,"stroke-width":isSel?2.4:1.8}));
+    if(machineType==="moore"){
+      const t = el("text",{x:s.x,y:s.y-6,"text-anchor":"middle","dominant-baseline":"central","font-family":"var(--mono)","font-size":13,"font-weight":600,fill:isActive?"#8a5b00":"var(--ink)"});
+      t.textContent=s.label; g.appendChild(t);
+      const o = el("text",{x:s.x,y:s.y+10,"text-anchor":"middle","dominant-baseline":"central","font-family":"var(--mono)","font-size":12,"font-weight":700,fill:"var(--primary)"});
+      o.textContent="/"+(s.output?s.output:"ε"); g.appendChild(o);
+    } else {
+      const t = el("text",{x:s.x,y:s.y,"text-anchor":"middle","dominant-baseline":"central","font-family":"var(--mono)","font-size":15,"font-weight":600,fill:isActive?"#8a5b00":"var(--ink)"});
+      t.textContent = s.label; g.appendChild(t);
+    }
+    svg.appendChild(g);
+  }
+
+  function drawEdge(g, lines){
+    const A = stateById(g.from), B = stateById(g.to);
+    if(!A||!B) return;
+    const isSel = selected && selected.type==="edge" && selected.from===g.from && selected.to===g.to;
+    const stroke = isSel ? "var(--primary)" : "var(--ink)";
+    const marker = isSel ? "url(#arrP)" : "url(#arr)";
+    const lw = isSel ? 2.6 : 1.8;
+    let path, lx, ly;
+    if(g.from===g.to){
+      const x=A.x, y=A.y;
+      path = `M${x-12} ${y-R+4} C${x-36} ${y-R-46}, ${x+36} ${y-R-46}, ${x+12} ${y-R+4}`;
+      lx = x; ly = y-R-40;
+    } else {
+      const dx=B.x-A.x, dy=B.y-A.y, dist=Math.hypot(dx,dy)||1;
+      const ux=dx/dist, uy=dy/dist;
+      if(hasReverse(g.from,g.to)){
+        const off=24, nx=-uy, ny=ux;
+        const mx=(A.x+B.x)/2 + nx*off, my=(A.y+B.y)/2 + ny*off;
+        const sa = Math.atan2(my-A.y,mx-A.x), ea = Math.atan2(my-B.y,mx-B.x);
+        const sx=A.x+Math.cos(sa)*R, sy=A.y+Math.sin(sa)*R;
+        const ex=B.x+Math.cos(ea)*(R+3), ey=B.y+Math.sin(ea)*(R+3);
+        path = `M${sx} ${sy} Q${mx} ${my} ${ex} ${ey}`;
+        lx = mx + nx*10; ly = my + ny*10;
+      } else {
+        const sx=A.x+ux*R, sy=A.y+uy*R, ex=B.x-ux*(R+3), ey=B.y-uy*(R+3);
+        path = `M${sx} ${sy} L${ex} ${ey}`;
+        lx=(sx+ex)/2 - uy*13; ly=(sy+ey)/2 + ux*13;
+      }
+    }
+    const p = el("path",{d:path,fill:"none",stroke,"stroke-width":lw,"marker-end":marker,style:"cursor:pointer"});
+    p.dataset.from=g.from; p.dataset.to=g.to;
+    const hit = el("path",{d:path,fill:"none",stroke:"transparent","stroke-width":16,style:"cursor:pointer"});
+    hit.dataset.from=g.from; hit.dataset.to=g.to; hit.dataset.edge="1";
+    svg.appendChild(hit); svg.appendChild(p);
+
+    const lineH=15, blockH=lines.length*lineH+4;
+    const maxLen=Math.max(...lines.map(s=>s.length));
+    const tw=Math.max(16, maxLen*7.6 + 10);
+    const bg = el("rect",{x:lx-tw/2,y:ly-blockH/2,width:tw,height:blockH,rx:5,fill:"var(--paper)",stroke:isSel?"var(--primary)":"var(--line)","stroke-width":1,style:"cursor:pointer"});
+    bg.dataset.from=g.from; bg.dataset.to=g.to; bg.dataset.edge="1";
+    svg.appendChild(bg);
+    lines.forEach((line,i)=>{
+      const y = ly - (lines.length-1)*lineH/2 + i*lineH;
+      const lt = el("text",{x:lx,y,"text-anchor":"middle","dominant-baseline":"central","font-family":"var(--mono)","font-size":12.5,"font-weight":500,fill:isSel?"var(--primary)":"var(--ink)",style:"cursor:pointer"});
+      lt.textContent=line; lt.dataset.from=g.from; lt.dataset.to=g.to; lt.dataset.edge="1";
+      svg.appendChild(lt);
+    });
+  }
+
+  // ---------- stats ----------
+  function inputAlphabet(){
+    const set=new Set();
+    for(const t of trans){ const s=(machineType==="pda"||machineType==="tm")?t.read:t.sym; if(s&&s!==EPS&&s!==BLANK) set.add(s); }
+    return [...set].sort();
+  }
+  function isDeterministic(){
+    if(trans.some(t=>t.sym===EPS)) return false;
+    const seen=new Set();
+    for(const t of trans){ const k=t.from+"|"+t.sym; if(seen.has(k)) return false; seen.add(k); }
+    return true;
+  }
+  function updateStats(){
+    document.getElementById("mStates").textContent=states.length;
+    const a=inputAlphabet();
+    document.getElementById("mAlpha").textContent=a.length?"{"+a.join(",")+"}":"∅";
+    document.getElementById("mTrans").textContent=trans.length;
+    const typeEl=document.getElementById("mType");
+    if(states.length===0){ typeEl.textContent="—"; typeEl.className="v"; return; }
+    if(machineType==="pda"){ typeEl.textContent="AP"; typeEl.className="v nondet"; return; }
+    if(machineType==="tm"){ typeEl.textContent="MT"; typeEl.className="v nondet"; return; }
+    if(machineType==="moore"){ typeEl.textContent="Moore"; typeEl.className="v"; return; }
+    if(machineType==="mealy"){ typeEl.textContent="Mealy"; typeEl.className="v"; return; }
+    if(isDeterministic()){ typeEl.textContent="AFD"; typeEl.className="v det"; }
+    else { typeEl.textContent="AFND"; typeEl.className="v nondet"; }
+  }
+
+  // ---------- FA engine ----------
+  function epsClosure(set){
+    const out=new Set(set), stack=[...set];
+    while(stack.length){ const s=stack.pop(); for(const t of trans) if(t.from===s && t.sym===EPS && !out.has(t.to)){ out.add(t.to); stack.push(t.to); } }
+    return out;
+  }
+  function faMove(set,sym){ const out=new Set(); for(const s of set) for(const t of trans) if(t.from===s && t.sym===sym) out.add(t.to); return out; }
+  function buildFrames(input){
+    const frames=[];
+    let cur = initial!=null ? epsClosure(new Set([initial])) : new Set();
+    frames.push(cur);
+    for(const sym of input){ cur=epsClosure(faMove(cur,sym)); frames.push(cur); }
+    return frames;
+  }
+  function faAccepts(input){
+    if(initial==null) return false;
+    const f=buildFrames(input), last=f[f.length-1];
+    for(const s of finals) if(last.has(s)) return true;
+    return false;
+  }
+
+  // ---------- PDA engine ----------
+  function pdaInitStack(){ return pdaInit===""? [] : pdaInit.split(""); }
+  function pdaRun(input){
+    if(initial==null) return {accepted:false, path:null};
+    const start={state:initial, i:0, stack:pdaInitStack()};
+    const key=c=>c.state+"|"+c.i+"|"+c.stack.join("");
+    const startKey=key(start);
+    const visited=new Set([startKey]);
+    const parent=new Map();
+    const nodeByKey=new Map([[startKey,start]]);
+    const queue=[start];
+    const maxStack=input.length+14;
+    const accept=c=> c.i===input.length && (pdaAccept==="final"? finals.has(c.state) : c.stack.length===0);
+    if(accept(start)) return reconstruct(startKey);
+    let cap=80000;
+    while(queue.length && cap-->0){
+      const c=queue.shift();
+      for(const t of trans){
+        if(t.from!==c.state) continue;
+        if(t.read!==EPS){ if(c.i>=input.length || input[c.i]!==t.read) continue; }
+        if(t.pop!==EPS){ if(c.stack.length===0 || c.stack[c.stack.length-1]!==t.pop) continue; }
+        const ns=c.stack.slice();
+        if(t.pop!==EPS) ns.pop();
+        if(t.push && t.push!==""){ for(let k=t.push.length-1;k>=0;k--) ns.push(t.push[k]); }
+        if(ns.length>maxStack) continue;
+        const nc={state:t.to, i:c.i+(t.read===EPS?0:1), stack:ns};
+        const nk=key(nc);
+        if(visited.has(nk)) continue;
+        visited.add(nk); nodeByKey.set(nk,nc);
+        parent.set(nk,{prev:key(c), desc:pdaLabel(t)});
+        if(accept(nc)) return reconstruct(nk);
+        queue.push(nc);
+      }
+    }
+    return {accepted:false, path:null};
+    function reconstruct(k){
+      const seq=[]; let cur=k;
+      while(cur){ const n=nodeByKey.get(cur), p=parent.get(cur); seq.push({state:n.state,i:n.i,stack:n.stack,desc:p?p.desc:"início"}); cur=p?p.prev:null; }
+      seq.reverse();
+      return {accepted:true, path:seq};
+    }
+  }
+
+  // ---------- TM engine ----------
+  function tmRun(input){
+    if(initial==null) return {accepted:false, path:[{state:null,head:0,tape:{},desc:"início"}], capped:false, halted:false};
+    let tape={}; for(let i=0;i<input.length;i++) tape[i]=input[i];
+    let state=initial, head=0;
+    const path=[{state,head,tape:Object.assign({},tape),desc:"início"}];
+    const cap=20000; let halted=false;
+    for(let step=0; step<cap; step++){
+      const read=(tape[head]!==undefined)?tape[head]:BLANK;
+      const t=trans.find(x=>x.from===state && x.read===read);
+      if(!t){ halted=true; break; }
+      if(t.write!==BLANK) tape[head]=t.write; else delete tape[head];
+      state=t.to;
+      head += (t.move==="R"?1:t.move==="L"?-1:0);
+      path.push({state,head,tape:Object.assign({},tape),desc:tmLabel(t)});
+    }
+    const accepted = halted && finals.has(state);
+    return {accepted, path, capped:!halted, halted};
+  }
+  function buildInitTape(input){ const t={}; input.forEach((c,i)=>t[i]=c); return t; }
+  function drawTmTape(tape, head){
+    const tapeEl=document.getElementById("tape");
+    tapeEl.innerHTML="";
+    tapeEl.style.flexWrap="nowrap"; tapeEl.style.overflowX="auto"; tapeEl.style.paddingBottom="6px";
+    const keys=Object.keys(tape).map(Number);
+    let lo=keys.length?Math.min(...keys):0, hi=keys.length?Math.max(...keys):0;
+    lo=Math.min(lo,head)-2; hi=Math.max(hi,head)+2;
+    const MAXW=44;
+    if(hi-lo+1>MAXW){ lo=head-Math.floor(MAXW/2); hi=lo+MAXW-1; }
+    for(let p=lo;p<=hi;p++){
+      const sym=(tape[p]!==undefined)?tape[p]:BLANK;
+      const c=document.createElement("div");
+      c.className="cell"+(p===head?" head":"")+(sym===BLANK?" epsilon":"");
+      c.textContent=sym; c.style.flex="0 0 auto";
+      tapeEl.appendChild(c);
+    }
+  }
+  function parseTmTriple(str){
+    const toks=str.split(/[;,]/).map(s=>s.trim());
+    let r=toks[0]||"", w=toks[1]||"", m=toks[2]||"";
+    const isBlank=v=>{ const low=v.toLowerCase(); return v===""||v===BLANK||v==="β"||v==="_"||low==="blank"||low==="branco"; };
+    const norm=v=> isBlank(v)? BLANK : v[0];
+    const read=norm(r);
+    const write = (w.trim()==="") ? read : norm(w);
+    const mv=m.trim().toUpperCase(), ml=m.trim().toLowerCase();
+    let move="S";
+    if(mv==="R"||mv==="D"||ml.startsWith("dir")) move="R";
+    else if(mv==="L"||mv==="E"||ml.startsWith("esq")) move="L";
+    return {read, write, move};
+  }
+  function tmTripleStr(t){ return `${t.read===BLANK?"□":t.read} ; ${t.write===BLANK?"□":t.write} , ${t.move}`; }
+
+  // ---------- transducers (Moore / Mealy) ----------
+  function stateOut(id){ const s=stateById(id); return s&&s.output?s.output:""; }
+  function dsOut(s){ return s===""?"ε":s; }
+  function parseMealy(str){
+    const slash=str.indexOf("/");
+    let inp, out;
+    if(slash>=0){ inp=str.slice(0,slash).trim(); out=str.slice(slash+1).trim(); }
+    else { inp=str.trim(); out=""; }
+    const low=out.toLowerCase();
+    if(out===EPS||out==="λ"||low==="eps"||low==="epsilon"||low==="lambda") out="";
+    return { sym: inp[0]||"", out };
+  }
+  function mealyTripleStr(t){ return `${t.sym} / ${t.out===""?"ε":t.out}`; }
+  function transduce(input){
+    if(initial==null) return {output:"", complete:false, path:[]};
+    if(machineType==="moore"){
+      let state=initial, out=stateOut(state);
+      const path=[{state,i:0,out,desc:"início — emite "+dsOut(stateOut(state))}];
+      for(let k=0;k<input.length;k++){
+        const t=trans.find(x=>x.from===state && x.sym===input[k]);
+        if(!t) return {output:out, complete:false, path};
+        state=t.to; out+=stateOut(state);
+        const st=stateById(state);
+        path.push({state,i:k+1,out,desc:"lê "+input[k]+" → "+(st?st.label:state)+" emite "+dsOut(stateOut(state))});
+      }
+      return {output:out, complete:true, path};
+    } else {
+      let state=initial, out="";
+      const path=[{state,i:0,out:"",desc:"início"}];
+      for(let k=0;k<input.length;k++){
+        const t=trans.find(x=>x.from===state && x.sym===input[k]);
+        if(!t) return {output:out, complete:false, path};
+        out+=t.out; state=t.to;
+        path.push({state,i:k+1,out,desc:"lê "+input[k]+" / emite "+dsOut(t.out)});
+      }
+      return {output:out, complete:true, path};
+    }
+  }
+  function showOutput(out, complete){
+    const v=document.getElementById("verdict");
+    v.className="verdict output";
+    v.innerHTML=`<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 8h9m0 0L8 5m3 3l-3 3"/></svg>
+      <span>Saída: <b style="font-family:var(--mono)">${escapeHtml(out===""?"ε":out)}</b></span>`
+      + (complete?"":'<span class="badge" style="color:var(--reject)">incompleta</span>');
+  }
+
+  function acceptsAny(input){
+    if(machineType==="fa") return faAccepts(input);
+    if(machineType==="tm") return tmRun(input).accepted;
+    return pdaRun(input).accepted;
+  }
+  function tokenize(str){ return str.split("").filter(c=>c!==" "); }
+
+  // ---------- run / step ----------
+  function runOne(){
+    const raw=document.getElementById("testStr").value;
+    if(initial==null){ flashHint("Defina um estado inicial primeiro (ferramenta de estado inicial e clique em um estado).",true); return; }
+    const input=tokenize(raw);
+    if(machineType==="moore"||machineType==="mealy"){
+      const r=transduce(input);
+      sim={mode:machineType,input,path:r.path,pos:0,output:r.output,complete:r.complete};
+      showOutput(r.output, r.complete); renderTape(); render(); return;
+    }
+    let ok;
+    if(machineType==="fa"){ sim={mode:"fa",input,frames:buildFrames(input),pos:0}; ok=faAccepts(input); }
+    else if(machineType==="pda"){ const r=pdaRun(input); sim={mode:"pda",input,path:r.accepted?r.path:null,pos:0,accepted:r.accepted}; ok=r.accepted; }
+    else { const r=tmRun(input); sim={mode:"tm",input,path:r.path,pos:0,accepted:r.accepted,capped:r.capped}; ok=r.accepted; if(r.capped) flashHint("A máquina não parou após o limite de passos (possível laço).",true); }
+    showVerdict(ok, raw);
+    renderTape(); render();
+  }
+  function showVerdict(ok, raw){
+    const v=document.getElementById("verdict");
+    v.className="verdict "+(ok?"accept":"reject");
+    v.innerHTML=`${ok
+      ? '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 8.5l3 3 7-7"/></svg>'
+      : '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4l8 8M12 4l-8 8"/></svg>'}
+      <span>${ok?"Aceita":"Rejeitada"}</span><span class="badge">${ok?"ACEITA":"REJEITA"}</span>`;
+  }
+
+  function renderTape(){
+    const tape=document.getElementById("tape");
+    const aset=document.getElementById("activeSet");
+    tape.innerHTML=""; aset.innerHTML="";
+    tape.style.flexWrap="wrap"; tape.style.overflowX="visible";
+    renderStack();
+    if(!sim){
+      if(machineType==="tm") drawTmTape(buildInitTape(tokenize(document.getElementById("testStr").value)),0);
+      aset.innerHTML='<span style="color:var(--ink-soft);font-style:italic">'+(machineType==="tm"?'Fita inicial — teste para executar a máquina.':'Teste uma cadeia e percorra-a símbolo a símbolo.')+'</span>';
+      document.getElementById("stepBack").disabled=true; document.getElementById("stepFwd").disabled=true;
+      return;
+    }
+    if(sim.mode==="moore"||sim.mode==="mealy"){
+      const node=sim.path[sim.pos];
+      if(sim.input.length===0){ const c=document.createElement("div"); c.className="cell epsilon"+(node.i===0?" head":""); c.textContent="ε"; tape.appendChild(c); }
+      sim.input.forEach((sym,i)=>{
+        const c=document.createElement("div");
+        c.className="cell"+(i<node.i?" done":"")+(i===node.i?" head":"");
+        c.textContent=sym; tape.appendChild(c);
+      });
+      const st=stateById(node.state);
+      const last=sim.pos===sim.path.length-1;
+      const info= sim.pos===0?"configuração inicial":"passo "+sim.pos+"/"+(sim.path.length-1);
+      let html=`<div style="margin-bottom:4px;color:#9aa0a8">${info}</div>`;
+      html+=`<span class="chip">${st?st.label:node.state}</span>`;
+      html+=`<div style="margin-top:5px"><span class="desc">${escapeHtml(node.desc)}</span></div>`;
+      html+=`<div style="margin-top:6px;font-family:var(--mono)">Saída: <b style="color:var(--primary)">${escapeHtml(node.out===""?"ε":node.out)}</b></div>`;
+      if(last && !sim.complete) html+='<div style="margin-top:5px" class="none">Transição indefinida — saída incompleta.</div>';
+      aset.innerHTML=html;
+      document.getElementById("stepBack").disabled=sim.pos<=0;
+      document.getElementById("stepFwd").disabled=sim.pos>=sim.path.length-1;
+      return;
+    }
+    if(sim.mode==="tm"){
+      const node=sim.path[sim.pos];
+      drawTmTape(node.tape, node.head);
+      const st=stateById(node.state);
+      const last=sim.pos===sim.path.length-1;
+      const info= sim.pos===0?"configuração inicial":"passo "+sim.pos+"/"+(sim.path.length-1);
+      let html=`<div style="margin-bottom:4px;color:#9aa0a8">${info}</div>`;
+      html+=`<span class="chip">${st?st.label:node.state}${finals.has(node.state)?" ✓":""}</span>`;
+      if(sim.pos>0) html+=`<div style="margin-top:5px"><span class="desc">${escapeHtml(node.desc)}</span></div>`;
+      if(last){
+        if(sim.capped) html+='<div style="margin-top:6px" class="none">Não parou — possível laço (limite atingido).</div>';
+        else html+=`<div style="margin-top:6px;color:${sim.accepted?'var(--accept)':'var(--reject)'}">Parou em ${st?st.label:node.state} — ${sim.accepted?'estado final ✓ (aceita)':'não-final (rejeita)'}.</div>`;
+      }
+      aset.innerHTML=html;
+      document.getElementById("stepBack").disabled=sim.pos<=0;
+      document.getElementById("stepFwd").disabled=sim.pos>=sim.path.length-1;
+      return;
+    }
+    if(sim.mode==="pda" && !sim.path){
+      sim.input.forEach(sym=>{ const c=document.createElement("div"); c.className="cell"; c.textContent=sym; tape.appendChild(c); });
+      aset.innerHTML='<span class="none">Não há computação aceitadora para esta cadeia.</span>';
+      document.getElementById("stepBack").disabled=true; document.getElementById("stepFwd").disabled=true;
+      return;
+    }
+    const headIdx = sim.mode==="fa"? sim.pos : sim.path[sim.pos].i;
+    if(sim.input.length===0){ const c=document.createElement("div"); c.className="cell epsilon head"; c.textContent="ε"; tape.appendChild(c); }
+    sim.input.forEach((sym,i)=>{
+      const c=document.createElement("div");
+      c.className="cell"+(i<headIdx?" done":"")+(i===headIdx?" head":"");
+      c.textContent=sym; tape.appendChild(c);
+    });
+
+    if(sim.mode==="fa"){
+      const cur=sim.frames[sim.pos];
+      const info = sim.pos===0?"antes de ler":"após ler “"+sim.input.slice(0,sim.pos).join("")+"”";
+      let chips = cur.size===0 ? '<span class="none">∅ — sem estados ativos (morto)</span>'
+        : [...cur].map(id=>{const st=stateById(id);return `<span class="chip">${st?st.label:id}${finals.has(id)?" ✓":""}</span>`;}).join("");
+      aset.innerHTML=`<div style="margin-bottom:4px;color:#9aa0a8">${info} · passo ${sim.pos}/${sim.input.length}</div>${chips}`;
+      document.getElementById("stepBack").disabled=sim.pos<=0;
+      document.getElementById("stepFwd").disabled=sim.pos>=sim.input.length;
+    } else {
+      const node=sim.path[sim.pos];
+      const st=stateById(node.state);
+      const info = sim.pos===0?"configuração inicial":"passo "+sim.pos+"/"+(sim.path.length-1);
+      let html=`<div style="margin-bottom:4px;color:#9aa0a8">${info}</div>`;
+      html+=`<span class="chip">${st?st.label:node.state}${finals.has(node.state)?" ✓":""}</span>`;
+      if(sim.pos>0) html+=`<div style="margin-top:5px"><span class="desc">${escapeHtml(node.desc)}</span></div>`;
+      aset.innerHTML=html;
+      document.getElementById("stepBack").disabled=sim.pos<=0;
+      document.getElementById("stepFwd").disabled=sim.pos>=sim.path.length-1;
+    }
+  }
+
+  function renderStack(){
+    const wrap=document.getElementById("stackView");
+    if(machineType!=="pda"){ wrap.style.display="none"; return; }
+    wrap.style.display="block";
+    let stk;
+    if(sim && sim.mode==="pda" && sim.path) stk=sim.path[sim.pos].stack;
+    else stk=pdaInitStack();
+    let html='<div class="stk-label">Pilha</div>';
+    if(stk.length===0){ html+='<div class="stk-empty">vazia</div>'; wrap.innerHTML=html; return; }
+    html+='<div class="stk">';
+    for(let k=stk.length-1;k>=0;k--){
+      const cls=(k===stk.length-1?" top":"")+(k===0&&stk.length>1?" bottom":"");
+      html+=`<div class="stk-cell${cls}">${escapeHtml(stk[k])}</div>`;
+    }
+    html+='</div>';
+    wrap.innerHTML=html;
+  }
+
+  function ensureSim(){
+    if(sim) return true;
+    if(initial==null){ flashHint("Defina um estado inicial primeiro.",true); return false; }
+    const input=tokenize(document.getElementById("testStr").value);
+    if(machineType==="fa") sim={mode:"fa",input,frames:buildFrames(input),pos:0};
+    else if(machineType==="pda"){ const res=pdaRun(input); sim={mode:"pda",input,path:res.accepted?res.path:null,pos:0,accepted:res.accepted}; }
+    else if(machineType==="tm"){ const res=tmRun(input); sim={mode:"tm",input,path:res.path,pos:0,accepted:res.accepted,capped:res.capped}; }
+    else { const r=transduce(input); sim={mode:machineType,input,path:r.path,pos:0,output:r.output,complete:r.complete}; }
+    return true;
+  }
+  function maxPos(){ return sim.mode==="fa"? sim.input.length : (sim.path? sim.path.length-1 : 0); }
+  document.getElementById("stepFwd").onclick=()=>{ if(ensureSim()&&sim.path!==null&&sim.pos<maxPos()){sim.pos++;renderTape();render();} };
+  document.getElementById("stepBack").onclick=()=>{ if(sim&&sim.pos>0){sim.pos--;renderTape();render();} };
+  document.getElementById("stepFirst").onclick=()=>{ if(ensureSim()){sim.pos=0;renderTape();render();} };
+  let playTimer=null;
+  document.getElementById("stepPlay").onclick=function(){
+    if(playTimer){ clearInterval(playTimer); playTimer=null; this.innerHTML=playIcon("Passo a passo"); return; }
+    if(!ensureSim()) return;
+    if(sim.mode==="pda" && !sim.path){ flashHint("Não há computação aceitadora para esta cadeia.",true); return; }
+    if(sim.pos>=maxPos()) sim.pos=0;
+    this.innerHTML='<svg viewBox="0 0 16 16" fill="currentColor"><rect x="4" y="3" width="3" height="10"/><rect x="9" y="3" width="3" height="10"/></svg>Pausar';
+    const btn=this; renderTape(); render();
+    playTimer=setInterval(()=>{
+      if(sim.pos>=maxPos()){
+        clearInterval(playTimer); playTimer=null; btn.innerHTML=playIcon("Passo a passo");
+        showVerdict(acceptsAny(sim.input), document.getElementById("testStr").value);
+        return;
+      }
+      sim.pos++; renderTape(); render();
+    },650);
+  };
+  function playIcon(label){ return '<svg viewBox="0 0 16 16" fill="currentColor"><path d="M4 3l9 5-9 5V3z"/></svg>'+label; }
+
+  document.getElementById("runOne").onclick=runOne;
+  document.getElementById("testStr").addEventListener("keydown",e=>{ if(e.key==="Enter") runOne(); });
+  document.getElementById("testStr").addEventListener("input",()=>{ sim=null; document.getElementById("verdict").className="verdict"; renderTape(); render(); });
+
+  document.getElementById("runBatch").onclick=function(){
+    const out=document.getElementById("batchOut");
+    if(initial==null){ out.innerHTML='<div class="nosel" style="margin-top:10px">Defina um estado inicial primeiro.</div>'; return; }
+    const lines=document.getElementById("batchIn").value.split("\n").map(l=>l.replace(/\r/,""));
+    const rows=lines.filter(l=>l.trim()!=="" || lines.length===1);
+    if(rows.length===0){ out.innerHTML=""; return; }
+    const transducer = machineType==="moore"||machineType==="mealy";
+    const head2 = transducer? "Saída" : "Resultado";
+    let html=`<table class="results"><thead><tr><th>Cadeia</th><th style="text-align:right">${head2}</th></tr></thead><tbody>`;
+    for(const line of rows){
+      const disp=line===""?'<span class="eps">ε</span>':escapeHtml(line);
+      if(transducer){
+        const r=transduce(tokenize(line));
+        const o = !r.complete? '<span style="color:var(--reject)">—</span>' : (r.output===""?'<span class="eps">ε</span>':escapeHtml(r.output));
+        html+=`<tr><td class="in">${disp}</td><td style="text-align:right">${o}</td></tr>`;
+      } else {
+        const ok=acceptsAny(tokenize(line));
+        html+=`<tr><td class="in">${disp}</td><td style="text-align:right"><span class="pill ${ok?'a':'r'}">${ok?'Aceita':'Rejeita'}</span></td></tr>`;
+      }
+    }
+    out.innerHTML=html+"</tbody></table>";
+  };
+
+  // ---------- selection / props ----------
+  function renderProps(){
+    const body=document.getElementById("propsBody");
+    if(!selected){ body.innerHTML='<div class="nosel">Nada selecionado. Clique em um estado ou transição para editar.</div>'; return; }
+    if(selected.type==="state"){
+      const s=stateById(selected.id); if(!s){selected=null;return renderProps();}
+      const isInit=initial===s.id, isFin=finals.has(s.id);
+      const transducer = machineType==="moore"||machineType==="mealy";
+      const finBtn = transducer? "" : `<button class="tg ${isFin?'on':''}" id="tgFin">${isFin?'◉ ':'○ '}Final (aceitação)</button>`;
+      const mooreField = machineType==="moore"? `<div class="label" style="margin-top:4px">Saída do estado (Moore)</div><div class="field"><input type="text" id="outField" value="${escapeHtml(s.output||"")}" placeholder="ε" style="max-width:130px"></div>` : "";
+      body.innerHTML=`<div class="label">Nome do estado</div>
+        <div class="field"><input type="text" id="renameField" value="${escapeHtml(s.label)}"></div>
+        ${mooreField}
+        <div class="toggles">
+          <button class="tg ${isInit?'on':''}" id="tgInit">${isInit?'● ':''}Estado inicial</button>
+          ${finBtn}
+          <button class="tg danger" id="tgDel">Excluir</button>
+        </div>`;
+      const rf=document.getElementById("renameField");
+      rf.addEventListener("input",()=>{ s.label=rf.value; render(); });
+      if(machineType==="moore"){
+        const of=document.getElementById("outField");
+        of.addEventListener("input",()=>{ const v=of.value.trim(); s.output=(v===""||v==="ε"||v==="λ")?"":v; sim=null; render(); });
+      }
+      document.getElementById("tgInit").onclick=()=>{ initial=isInit?null:s.id; sim=null; render(); renderProps(); };
+      if(!transducer) document.getElementById("tgFin").onclick=()=>{ if(isFin)finals.delete(s.id); else finals.add(s.id); sim=null; render(); renderProps(); };
+      document.getElementById("tgDel").onclick=()=>deleteState(s.id);
+      return;
+    }
+    // edge
+    const grp=edgeGroups().find(g=>g.from===selected.from&&g.to===selected.to);
+    if(!grp){ selected=null; return renderProps(); }
+    const A=stateById(selected.from), B=stateById(selected.to);
+    if(machineType==="fa"||machineType==="moore"){
+      const cur=grp.items.map(t=>t.sym).join(", ");
+      body.innerHTML=`<div class="label">Transição &nbsp;<b style="font-family:var(--mono)">${A.label} → ${B.label}</b></div>
+        <div class="field"><input type="text" id="symField" value="${escapeHtml(cur)}" placeholder="a, b, ε"></div>
+        <div class="toggles"><button class="tg on" id="symSave">Atualizar símbolos</button><button class="tg danger" id="symDel">Excluir</button></div>
+        <div style="font-size:11px;color:var(--ink-soft);margin-top:9px;line-height:1.5">Separe por vírgulas. Use <kbd>ε</kbd> (ou deixe em branco) para um movimento vazio.</div>`;
+      document.getElementById("symSave").onclick=()=>setEdgeSymbols(selected.from,selected.to,document.getElementById("symField").value);
+      document.getElementById("symField").addEventListener("keydown",e=>{ if(e.key==="Enter") document.getElementById("symSave").click(); });
+      document.getElementById("symDel").onclick=()=>{ trans=trans.filter(t=>!(t.from===selected.from&&t.to===selected.to)); selected=null; sim=null; render(); renderProps(); };
+    } else if(machineType==="pda") {
+      let rows=grp.items.map(t=>`<div class="field"><input type="text" data-tid="${t.id}" value="${escapeHtml(pdaTripleStr(t))}"><button class="tg" data-upd="${t.id}" title="Atualizar">✓</button><button class="tg danger" data-del="${t.id}" title="Excluir">✕</button></div>`).join("");
+      body.innerHTML=`<div class="label">Transições &nbsp;<b style="font-family:var(--mono)">${A.label} → ${B.label}</b></div>
+        ${rows}
+        <div class="field"><input type="text" id="pdaAdd" placeholder="a , Z ; aZ"><button class="tg on" id="pdaAddBtn">+</button></div>
+        <div style="font-size:11px;color:var(--ink-soft);margin-top:6px;line-height:1.55">Formato <b style="font-family:var(--mono)">ler , desempilha ; empilha</b>. Use <kbd>ε</kbd> para vazio. Na pilha empilhada, o 1º símbolo fica no topo.</div>`;
+      body.querySelectorAll("[data-upd]").forEach(btn=>btn.onclick=()=>{
+        const id=btn.dataset.upd, inp=body.querySelector(`[data-tid="${id}"]`);
+        const t=trans.find(x=>x.id===id); if(!t) return;
+        const tr=parsePdaTriple(inp.value); t.read=tr.read; t.pop=tr.pop; t.push=tr.push;
+        sim=null; render(); renderProps();
+      });
+      body.querySelectorAll("[data-del]").forEach(btn=>btn.onclick=()=>{
+        trans=trans.filter(x=>x.id!==btn.dataset.del); sim=null;
+        if(!trans.some(t=>t.from===selected.from&&t.to===selected.to)) selected=null;
+        render(); renderProps();
+      });
+      body.querySelectorAll("[data-tid]").forEach(inp=>inp.addEventListener("keydown",e=>{ if(e.key==="Enter") body.querySelector(`[data-upd="${inp.dataset.tid}"]`).click(); }));
+      const addBtn=document.getElementById("pdaAddBtn");
+      addBtn.onclick=()=>{
+        const tr=parsePdaTriple(document.getElementById("pdaAdd").value);
+        if(!trans.some(t=>t.from===selected.from&&t.to===selected.to&&t.read===tr.read&&t.pop===tr.pop&&t.push===tr.push))
+          trans.push({id:uid(),from:selected.from,to:selected.to,read:tr.read,pop:tr.pop,push:tr.push});
+        sim=null; render(); renderProps();
+      };
+      document.getElementById("pdaAdd").addEventListener("keydown",e=>{ if(e.key==="Enter") addBtn.click(); });
+    } else if(machineType==="tm") {
+      let rows=grp.items.map(t=>`<div class="field"><input type="text" data-tid="${t.id}" value="${escapeHtml(tmTripleStr(t))}"><button class="tg" data-upd="${t.id}" title="Atualizar">✓</button><button class="tg danger" data-del="${t.id}" title="Excluir">✕</button></div>`).join("");
+      body.innerHTML=`<div class="label">Transições &nbsp;<b style="font-family:var(--mono)">${A.label} → ${B.label}</b></div>
+        ${rows}
+        <div class="field"><input type="text" id="tmAdd" placeholder="a ; A , D"><button class="tg on" id="tmAddBtn">+</button></div>
+        <div style="font-size:11px;color:var(--ink-soft);margin-top:6px;line-height:1.55">Formato <b style="font-family:var(--mono)">ler ; escreve , mov</b>. Movimento <kbd>D</kbd>/<kbd>E</kbd>/<kbd>P</kbd> (direita/esquerda/parado). Use <kbd>□</kbd> para o branco.</div>`;
+      body.querySelectorAll("[data-upd]").forEach(btn=>btn.onclick=()=>{
+        const id=btn.dataset.upd, inp=body.querySelector(`[data-tid="${id}"]`);
+        const t=trans.find(x=>x.id===id); if(!t) return;
+        const tr=parseTmTriple(inp.value); t.read=tr.read; t.write=tr.write; t.move=tr.move;
+        sim=null; render(); renderProps();
+      });
+      body.querySelectorAll("[data-del]").forEach(btn=>btn.onclick=()=>{
+        trans=trans.filter(x=>x.id!==btn.dataset.del); sim=null;
+        if(!trans.some(t=>t.from===selected.from&&t.to===selected.to)) selected=null;
+        render(); renderProps();
+      });
+      body.querySelectorAll("[data-tid]").forEach(inp=>inp.addEventListener("keydown",e=>{ if(e.key==="Enter") body.querySelector(`[data-upd="${inp.dataset.tid}"]`).click(); }));
+      const addBtn=document.getElementById("tmAddBtn");
+      addBtn.onclick=()=>{
+        const tr=parseTmTriple(document.getElementById("tmAdd").value);
+        if(!trans.some(t=>t.from===selected.from&&t.to===selected.to&&t.read===tr.read))
+          trans.push({id:uid(),from:selected.from,to:selected.to,read:tr.read,write:tr.write,move:tr.move});
+        sim=null; render(); renderProps();
+      };
+      document.getElementById("tmAdd").addEventListener("keydown",e=>{ if(e.key==="Enter") addBtn.click(); });
+    } else {
+      let rows=grp.items.map(t=>`<div class="field"><input type="text" data-tid="${t.id}" value="${escapeHtml(mealyTripleStr(t))}"><button class="tg" data-upd="${t.id}" title="Atualizar">✓</button><button class="tg danger" data-del="${t.id}" title="Excluir">✕</button></div>`).join("");
+      body.innerHTML=`<div class="label">Transições &nbsp;<b style="font-family:var(--mono)">${A.label} → ${B.label}</b></div>
+        ${rows}
+        <div class="field"><input type="text" id="myAdd" placeholder="a / x"><button class="tg on" id="myAddBtn">+</button></div>
+        <div style="font-size:11px;color:var(--ink-soft);margin-top:6px;line-height:1.55">Formato <b style="font-family:var(--mono)">entrada / saída</b>. A saída pode ter vários símbolos; use <kbd>ε</kbd> para saída vazia.</div>`;
+      body.querySelectorAll("[data-upd]").forEach(btn=>btn.onclick=()=>{
+        const id=btn.dataset.upd, inp=body.querySelector(`[data-tid="${id}"]`);
+        const t=trans.find(x=>x.id===id); if(!t) return;
+        const tr=parseMealy(inp.value); t.sym=tr.sym; t.out=tr.out;
+        sim=null; render(); renderProps();
+      });
+      body.querySelectorAll("[data-del]").forEach(btn=>btn.onclick=()=>{
+        trans=trans.filter(x=>x.id!==btn.dataset.del); sim=null;
+        if(!trans.some(t=>t.from===selected.from&&t.to===selected.to)) selected=null;
+        render(); renderProps();
+      });
+      body.querySelectorAll("[data-tid]").forEach(inp=>inp.addEventListener("keydown",e=>{ if(e.key==="Enter") body.querySelector(`[data-upd="${inp.dataset.tid}"]`).click(); }));
+      const addBtn=document.getElementById("myAddBtn");
+      addBtn.onclick=()=>{
+        const tr=parseMealy(document.getElementById("myAdd").value);
+        if(tr.sym!=="" && !trans.some(t=>t.from===selected.from&&t.to===selected.to&&t.sym===tr.sym))
+          trans.push({id:uid(),from:selected.from,to:selected.to,sym:tr.sym,out:tr.out});
+        sim=null; render(); renderProps();
+      };
+      document.getElementById("myAdd").addEventListener("keydown",e=>{ if(e.key==="Enter") addBtn.click(); });
+    }
+  }
+  function pdaTripleStr(t){ return `${t.read===EPS?"ε":t.read} , ${t.pop===EPS?"ε":t.pop} ; ${(!t.push)?"ε":t.push}`; }
+  function parsePdaTriple(str){
+    let push="", left=str;
+    const semi=str.indexOf(";");
+    if(semi>=0){ left=str.slice(0,semi); push=str.slice(semi+1).trim(); }
+    const comma=left.indexOf(",");
+    let read,pop;
+    if(comma>=0){ read=left.slice(0,comma).trim(); pop=left.slice(comma+1).trim(); }
+    else { read=left.trim(); pop=""; }
+    const norm=v=>{ const low=v.toLowerCase(); return (v===""||v===EPS||v==="λ"||low==="eps"||low==="epsilon"||low==="lambda")?EPS:v[0]; };
+    const lowp=push.toLowerCase();
+    if(push===EPS||push==="λ"||lowp==="eps"||lowp==="epsilon"||lowp==="lambda") push="";
+    return { read:norm(read), pop:norm(pop), push:push.replace(/\s+/g,"") };
+  }
+  function parseSymbols(str){
+    const out=[];
+    for(let p of str.split(",").map(s=>s.trim())){
+      const low=p.toLowerCase();
+      if(p===""||p===EPS||low==="eps"||low==="epsilon"||low==="lambda"||p==="λ") out.push(EPS);
+      else out.push(p[0]);
+    }
+    return [...new Set(out)];
+  }
+  function setEdgeSymbols(from,to,str){
+    trans=trans.filter(t=>!(t.from===from&&t.to===to));
+    for(const sym of parseSymbols(str)) trans.push({id:uid(),from,to,sym});
+    sim=null; render(); renderProps();
+  }
+  function deleteState(id){
+    states=states.filter(s=>s.id!==id);
+    trans=trans.filter(t=>t.from!==id&&t.to!==id);
+    if(initial===id) initial=null;
+    finals.delete(id);
+    if(selected&&selected.type==="state"&&selected.id===id) selected=null;
+    sim=null; render(); renderProps();
+  }
+
+  // ---------- FA → grammar ----------
+  function alphabet(){ const set=new Set(); for(const t of trans) if(t.sym!==EPS) set.add(t.sym); return [...set].sort(); }
+  function generateGrammar(){
+    const out=document.getElementById("grammarOut");
+    if(initial==null){ out.innerHTML='<div class="nosel" style="margin-top:10px">Defina um estado inicial primeiro.</div>'; return; }
+    const rules=new Map();
+    const add=(l,r)=>{ if(!rules.has(l))rules.set(l,[]); rules.get(l).push(r); };
+    for(const t of trans){
+      const A=stateById(t.from),B=stateById(t.to); if(!A||!B) continue;
+      if(t.sym===EPS) add(A.id,`<span class="lhs" style="color:var(--ink);font-weight:400">${escapeHtml(B.label)}</span>`);
+      else add(A.id,`<span class="term">${escapeHtml(t.sym)}</span><span>${escapeHtml(B.label)}</span>`);
+    }
+    for(const f of finals) if(stateById(f)) add(f,'<span class="eps">ε</span>');
+    let bodyHtml="";
+    for(const s of states){
+      if(!rules.has(s.id)) continue;
+      bodyHtml+=`<div class="prod"><span class="lhs">${escapeHtml(s.label)}</span><span class="arrow">→</span>${rules.get(s.id).join('<span class="arrow">|</span>')}</div>`;
+    }
+    const a=alphabet(), vars=states.filter(s=>rules.has(s.id)).map(s=>s.label);
+    out.innerHTML=`<div class="grammar">
+      <div class="meta">Símbolo inicial: <b>${escapeHtml(stateById(initial).label)}</b> · Variáveis: {${vars.map(escapeHtml).join(", ")}} · Terminais: {${a.map(escapeHtml).join(", ")||"∅"}}</div>
+      ${bodyHtml||'<div class="eps">sem produções</div>'}
+      <div class="note">Gramática linear à direita equivalente ao autômato: cada estado vira uma variável, o estado inicial é o símbolo inicial e todo estado final recebe a produção vazia (→ ε). Atualiza com a máquina em tempo real.</div>
+    </div>`;
+  }
+  document.getElementById("genGrammar").onclick=()=>{ grammarShown=true; generateGrammar(); };
+
+  // ---------- tools ----------
+  function setTool(t){
+    tool=t;
+    document.querySelectorAll(".tool").forEach(b=>b.classList.toggle("active",b.dataset.tool===t));
+    transSource=null; hideFloat(); updateHint();
+  }
+  document.querySelectorAll(".tool").forEach(b=>b.onclick=()=>setTool(b.dataset.tool));
+
+  function updateHint(){
+    const h=document.getElementById("hint");
+    const tips={
+      select:'<b>Selecionar</b> — arraste os estados · clique em um estado/transição para editar',
+      state:'<b>Adicionar estado</b> — clique em qualquer lugar para criar um estado',
+      trans:'<b>Adicionar transição</b> — clique na origem e depois no destino',
+      initial:'<b>Estado inicial</b> — clique em um estado para torná-lo inicial',
+      final:'<b>Final</b> — clique em um estado para alternar o anel de aceitação',
+      delete:'<b>Excluir</b> — clique em um estado ou transição para removê-lo'
+    };
+    h.innerHTML=tips[tool]||"";
+    h.style.display = tool==="select"&&states.length? "none":"block";
+  }
+  function flashHint(msg,warn){
+    const h=document.getElementById("hint");
+    h.innerHTML=msg; h.style.display="block";
+    if(warn) h.style.borderColor="var(--reject)";
+    clearTimeout(flashHint._t);
+    flashHint._t=setTimeout(()=>{ h.style.borderColor=""; updateHint(); },2300);
+  }
+
+  let dragging=null, transSource=null;
+  function hitState(evt){
+    const p=svgPoint(evt);
+    for(let i=states.length-1;i>=0;i--){ const s=states[i]; if(Math.hypot(p.x-s.x,p.y-s.y)<=R+2) return s; }
+    return null;
+  }
+  svg.addEventListener("mousedown",e=>onDown(e,e));
+  svg.addEventListener("touchstart",e=>{ if(e.touches[0]) onDown(e.touches[0],e); },{passive:false});
+  function onDown(evt, orig){
+    const st=hitState(evt);
+    const tgt=orig.target;
+    const edge=(tgt.dataset&&tgt.dataset.edge)?{from:tgt.dataset.from,to:tgt.dataset.to}:null;
+    if(tool==="state"){ const p=svgPoint(evt); addState(p.x,p.y); return; }
+    if(tool==="delete"){
+      if(st) deleteState(st.id);
+      else if(edge){ trans=trans.filter(t=>!(t.from===edge.from&&t.to===edge.to)); sim=null; render(); }
+      return;
+    }
+    if(tool==="initial"){ if(st){ initial=st.id; sim=null; selected={type:"state",id:st.id}; render(); renderProps(); } return; }
+    if(tool==="final"){ if(st){ if(finals.has(st.id))finals.delete(st.id);else finals.add(st.id); sim=null; selected={type:"state",id:st.id}; render(); renderProps(); } return; }
+    if(tool==="trans"){
+      if(st){
+        if(!transSource){ transSource=st.id; selected={type:"state",id:st.id}; render(); flashHint('Agora clique no estado de <b>destino</b>'); }
+        else openFloat(transSource, st.id);
+      }
+      return;
+    }
+    if(st){
+      dragging=st; dragging._ox=svgPoint(evt).x-st.x; dragging._oy=svgPoint(evt).y-st.y;
+      selected={type:"state",id:st.id}; render(); renderProps();
+      if(orig.preventDefault) orig.preventDefault();
+    } else if(edge){ selected={type:"edge",from:edge.from,to:edge.to}; render(); renderProps(); }
+    else { selected=null; render(); renderProps(); }
+  }
+  let raf=null;
+  window.addEventListener("mousemove",e=>onMove(e,e));
+  window.addEventListener("touchmove",e=>{ if(e.touches[0]) onMove(e.touches[0],e); },{passive:false});
+  function onMove(evt,orig){
+    if(!dragging) return;
+    if(orig.preventDefault) orig.preventDefault();
+    const p=svgPoint(evt);
+    dragging.x=p.x-dragging._ox; dragging.y=p.y-dragging._oy;
+    if(!raf) raf=requestAnimationFrame(()=>{ raf=null; render(); });
+  }
+  window.addEventListener("mouseup",()=>{ dragging=null; });
+  window.addEventListener("touchend",()=>{ dragging=null; });
+  svg.addEventListener("dblclick",e=>{
+    const st=hitState(e);
+    if(st){ if(finals.has(st.id))finals.delete(st.id); else finals.add(st.id); sim=null; render(); renderProps(); return; }
+    const p=svgPoint(e); addState(p.x,p.y);
+  });
+  function addState(x,y){
+    const s={id:uid(),x:Math.round(x),y:Math.round(y),label:"q"+states.length};
+    states.push(s);
+    if(initial==null) initial=s.id;
+    selected={type:"state",id:s.id};
+    sim=null; render(); renderProps(); updateHint();
+  }
+
+  // ---------- floating transition input ----------
+  const floatBox=document.getElementById("floatInput");
+  const floatField=document.getElementById("floatField");
+  let pendingEdge=null;
+  function openFloat(from,to){
+    pendingEdge={from,to};
+    const A=stateById(from),B=stateById(to);
+    const mx=(A.x+B.x)/2, my=from===to? A.y-R-52 : (A.y+B.y)/2;
+    floatBox.style.display="flex";
+    floatBox.style.left=Math.max(8,Math.min(mx-80, stage.clientWidth-180))+"px";
+    floatBox.style.top=Math.max(8,my-18)+"px";
+    floatField.value=""; floatField.focus();
+  }
+  function hideFloat(){ floatBox.style.display="none"; pendingEdge=null; transSource=null; }
+  function commitFloat(){
+    if(!pendingEdge) return;
+    const {from,to}=pendingEdge;
+    if(machineType==="fa"||machineType==="moore"){
+      const v=floatField.value.trim()===""? EPS : floatField.value;
+      for(const sym of parseSymbols(v))
+        if(!trans.some(t=>t.from===from&&t.to===to&&t.sym===sym)) trans.push({id:uid(),from,to,sym});
+    } else if(machineType==="pda"){
+      const tr=parsePdaTriple(floatField.value);
+      if(!trans.some(t=>t.from===from&&t.to===to&&t.read===tr.read&&t.pop===tr.pop&&t.push===tr.push))
+        trans.push({id:uid(),from,to,read:tr.read,pop:tr.pop,push:tr.push});
+    } else if(machineType==="tm"){
+      const tr=parseTmTriple(floatField.value);
+      if(!trans.some(t=>t.from===from&&t.to===to&&t.read===tr.read))
+        trans.push({id:uid(),from,to,read:tr.read,write:tr.write,move:tr.move});
+    } else {
+      const tr=parseMealy(floatField.value);
+      if(tr.sym!=="" && !trans.some(t=>t.from===from&&t.to===to&&t.sym===tr.sym))
+        trans.push({id:uid(),from,to,sym:tr.sym,out:tr.out});
+    }
+    selected={type:"edge",from,to};
+    hideFloat(); sim=null; render(); renderProps(); flashHint('Clique na <b>origem</b> para outra transição');
+  }
+  document.getElementById("floatOk").onclick=commitFloat;
+  floatField.addEventListener("keydown",e=>{ if(e.key==="Enter") commitFloat(); if(e.key==="Escape") hideFloat(); });
+
+  window.addEventListener("keydown",e=>{
+    if(/input|textarea/i.test(e.target.tagName)) return;
+    const map={v:"select",s:"state",t:"trans",i:"initial",f:"final"};
+    if(map[e.key.toLowerCase()]){ setTool(map[e.key.toLowerCase()]); return; }
+    if((e.key==="Delete"||e.key==="Backspace") && selected){
+      if(selected.type==="state") deleteState(selected.id);
+      else { trans=trans.filter(t=>!(t.from===selected.from&&t.to===selected.to)); selected=null; sim=null; render(); renderProps(); }
+    }
+    if(e.key==="Escape"){ if(document.getElementById("tutModal").classList.contains("open")){ closeTutorial(); return; } hideFloat(); selected=null; render(); renderProps(); }
+  });
+
+  function escapeHtml(s){ return String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
+
+  // ---------- PDA config controls ----------
+  document.getElementById("initStack").addEventListener("input",function(){
+    pdaInit=this.value.replace(/\s+/g,"");
+    sim=null; document.getElementById("verdict").className="verdict"; renderTape(); render();
+  });
+  document.querySelectorAll("#pdaConfig [data-acc]").forEach(b=>b.onclick=()=>{
+    pdaAccept=b.dataset.acc;
+    document.querySelectorAll("#pdaConfig [data-acc]").forEach(x=>x.classList.toggle("on",x.dataset.acc===pdaAccept));
+    sim=null; document.getElementById("verdict").className="verdict"; renderTape(); render();
+  });
+
+  // ---------- save / load ----------
+  document.getElementById("export").onclick=()=>{
+    const data={machineType,states,trans,initial,finals:[...finals],nextId,pdaInit,pdaAccept};
+    const blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"});
+    const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download="automato.json"; a.click();
+    URL.revokeObjectURL(a.href);
+  };
+  document.getElementById("import").onclick=()=>document.getElementById("file").click();
+  document.getElementById("file").onchange=function(){
+    const f=this.files[0]; if(!f) return;
+    const r=new FileReader();
+    r.onload=()=>{ try{ loadData(JSON.parse(r.result)); }catch(err){ flashHint("Não foi possível ler o arquivo.",true); } };
+    r.readAsText(f); this.value="";
+  };
+  function loadData(d){
+    machineType=d.machineType||"fa";
+    states=d.states||[]; trans=d.trans||[]; initial=d.initial??null;
+    finals=new Set(d.finals||[]); nextId=d.nextId||states.length;
+    pdaInit=d.pdaInit??"Z"; pdaAccept=d.pdaAccept||"final";
+    selected=null; sim=null; grammarShown=false;
+    document.getElementById("verdict").className="verdict";
+    document.getElementById("batchOut").innerHTML="";
+    document.getElementById("grammarOut").innerHTML="";
+    document.getElementById("initStack").value=pdaInit;
+    document.querySelectorAll("#pdaConfig [data-acc]").forEach(x=>x.classList.toggle("on",x.dataset.acc===pdaAccept));
+    applyModeUI(); render(); renderProps(); renderTape(); updateHint();
+  }
+  document.getElementById("clear").onclick=()=>{
+    states=[];trans=[];initial=null;finals=new Set();nextId=0;selected=null;sim=null;grammarShown=false;
+    document.getElementById("verdict").className="verdict";
+    document.getElementById("batchOut").innerHTML="";
+    document.getElementById("grammarOut").innerHTML="";
+    document.getElementById("testStr").value=""; document.getElementById("batchIn").value="";
+    render();renderProps();renderTape();updateHint();
+  };
+
+  // ---------- mode UI ----------
+  function legendFA(){ return `<div class="legend">
+      <div><span class="lg-arrow">→</span> Estado inicial (seta de entrada)</div>
+      <div><span class="lg-state"></span> Estado comum</div>
+      <div><span class="lg-state fin"></span> Estado final (anel duplo)</div>
+      <div><span class="lg-state act"></span> Ativo durante a simulação</div>
+      <div style="margin-top:4px;font-size:11px">Use <kbd>ε</kbd> (ou deixe a transição em branco) para um movimento vazio em um AFND.</div>
+    </div>`; }
+  function legendPDA(){ return `<div class="legend">
+      <div><span class="lg-arrow">→</span> Estado inicial</div>
+      <div><span class="lg-state fin"></span> Estado final</div>
+      <div><span class="lg-state act"></span> Estado ativo na computação</div>
+      <div style="margin-top:6px;font-size:11px;line-height:1.6">Cada transição é <b style="font-family:var(--mono)">ler , desempilha ; empilha</b>.<br>
+      Ex.: <kbd>a , Z ; aZ</kbd> lê <b>a</b>, desempilha <b>Z</b> e empilha <b>aZ</b> (com <b>a</b> no topo).<br>
+      Use <kbd>ε</kbd> para não ler / não desempilhar / não empilhar. O passo a passo mostra <b>uma</b> computação aceitadora.</div>
+    </div>`; }
+  function legendTM(){ return `<div class="legend">
+      <div><span class="lg-arrow">→</span> Estado inicial</div>
+      <div><span class="lg-state fin"></span> Estado final (aceita ao parar nele)</div>
+      <div><span class="lg-state act"></span> Estado ativo</div>
+      <div style="margin-top:6px;font-size:11px;line-height:1.6">Cada transição é <b style="font-family:var(--mono)">ler ; escreve , mov</b>.<br>
+      Ex.: <kbd>a ; X , D</kbd> lê <b>a</b>, escreve <b>X</b> e move a cabeça à <b>direita</b>.<br>
+      Movimento: <kbd>D</kbd> direita, <kbd>E</kbd> esquerda, <kbd>P</kbd> parado. O branco é <kbd>□</kbd>. A fita é infinita nos dois sentidos; a máquina aceita ao <b>parar</b> num estado final.</div>
+    </div>`; }
+  function legendMoore(){ return `<div class="legend">
+      <div><span class="lg-arrow">→</span> Estado inicial</div>
+      <div><span class="lg-state act"></span> Estado ativo</div>
+      <div style="margin-top:6px;font-size:11px;line-height:1.6">Transdutor de <b>Moore</b>: a saída fica nos <b>estados</b> (mostrada como <b style="font-family:var(--mono)">/saída</b> dentro do círculo). As transições levam só o símbolo de entrada.<br>
+      A saída emitida tem <b>n+1</b> símbolos: a do estado inicial e a de cada estado visitado. Edite a saída de um estado no painel de seleção. Não há estados finais.</div>
+    </div>`; }
+  function legendMealy(){ return `<div class="legend">
+      <div><span class="lg-arrow">→</span> Estado inicial</div>
+      <div><span class="lg-state act"></span> Estado ativo</div>
+      <div style="margin-top:6px;font-size:11px;line-height:1.6">Transdutor de <b>Mealy</b>: a saída fica nas <b>transições</b>, no formato <b style="font-family:var(--mono)">entrada / saída</b>.<br>
+      Ex.: <kbd>a / x</kbd> ao ler <b>a</b> emite <b>x</b>. A saída tem <b>n</b> símbolos (um por transição). Use <kbd>ε</kbd> para saída vazia. Não há estados finais.</div>
+    </div>`; }
+  const FA_OPTS=[["","Exemplos…"],["aabb",'AFD · contém "aa" ou "bb"'],["nfa-aabb",'AFND · contém "aa" ou "bb"'],["ends01",'AFD · termina com "01"'],["even-a","AFD · número par de a's"],["no-aa","AFD · sem dois a's seguidos"],["substr-aba",'AFD · contém "aba"'],["div3","AFD · binário divisível por 3"],["third-last-1","AFND · 3º símbolo do fim é 1"],["eps","AFND-ε · a*b*"]];
+  const PDA_OPTS=[["","Exemplos…"],["pal","AP · palíndromos ww^R"],["anbn","AP · a^n b^n"],["anb2n","AP · a^n b^2n"],["eq","AP · nº de a's = nº de b's"],["paren","AP · parênteses balanceados"]];
+  const TM_OPTS=[["","Exemplos…"],["anbn","MT · a^n b^n"],["anbncn","MT · a^n b^n c^n"],["equal-ab","MT · nº de a's = nº de b's"],["pal","MT · palíndromos (a,b)"],["binpal","MT · palíndromos binários"]];
+  const MOORE_OPTS=[["","Exemplos…"],["parity","Moore · paridade de a's"],["mod3","Moore · contagem de a's mod 3"],["detect-aa",'Moore · detectar "aa"'],["len-parity","Moore · paridade do comprimento"]];
+  const MEALY_OPTS=[["","Exemplos…"],["complement","Mealy · complemento binário"],["delay","Mealy · atraso de 1 símbolo"],["double-a","Mealy · duplicar a's"],["blanks","Mealy · compactar brancos"]];
+  function applyModeUI(){
+    const pda=machineType==="pda", tm=machineType==="tm", fa=machineType==="fa";
+    const moore=machineType==="moore", mealy=machineType==="mealy";
+    document.getElementById("pdaConfig").style.display=pda?"block":"none";
+    document.getElementById("grammarSec").style.display=fa?"block":"none";
+    document.querySelectorAll("#seg button").forEach(b=>b.classList.toggle("on",b.dataset.m===machineType));
+    const sel=document.getElementById("examples");
+    const opts = fa?FA_OPTS : pda?PDA_OPTS : tm?TM_OPTS : moore?MOORE_OPTS : MEALY_OPTS;
+    sel.innerHTML=opts.map(([v,l])=>`<option value="${v}">${escapeHtml(l)}</option>`).join("");
+    document.getElementById("legendBody").innerHTML = fa?legendFA() : pda?legendPDA() : tm?legendTM() : moore?legendMoore() : legendMealy();
+    floatField.placeholder = (fa||moore)?"a, b" : pda?"a , Z ; aZ" : tm?"a ; A , D" : "a / x";
+    renderStack();
+  }
+  function loadDefaultExample(){
+    if(machineType==="fa") FA_EX.aabb(); else if(machineType==="pda") PDA_EX.pal(); else if(machineType==="tm") TM_EX.anbn(); else if(machineType==="moore") MOORE_EX.parity(); else MEALY_EX.complement();
+  }
+  function switchMode(m){
+    machineType=m; grammarShown=false;
+    document.getElementById("grammarOut").innerHTML="";
+    document.getElementById("verdict").className="verdict";
+    document.getElementById("batchOut").innerHTML="";
+    applyModeUI(); loadDefaultExample(); renderTape();
+  }
+  document.querySelectorAll("#seg button").forEach(b=>b.onclick=()=>{ if(b.dataset.m!==machineType) switchMode(b.dataset.m); });
+  document.getElementById("examples").onchange=function(){
+    const ex = machineType==="fa"?FA_EX : machineType==="pda"?PDA_EX : machineType==="tm"?TM_EX : machineType==="moore"?MOORE_EX : MEALY_EX;
+    if(this.value && ex[this.value]) ex[this.value]();
+    this.value="";
+  };
+
+  // ---------- tutorial ----------
+  const TUT={
+    fa:{tag:"AF",title:"Autômato Finito (AFD / AFND)",html:`
+      <p>Um <b>autômato finito</b> é o reconhecedor das <b>linguagens regulares</b>. Ele lê a cadeia da esquerda para a direita e, a cada símbolo, muda de estado segundo a função de transição. No fim, <b>aceita</b> a cadeia se parar num estado final.</p>
+      <div class="tut-tuple">M = (Q, &Sigma;, &delta;, q&#8320;, F)<br>Q estados · &Sigma; alfabeto · &delta; transição · q&#8320; inicial · F finais</div>
+      <h4>AFD &times; AFND</h4>
+      <p>No <b>AFD</b> (determinístico) há exatamente uma transição por estado e símbolo. No <b>AFND</b> (não-determinístico) pode haver várias para o mesmo par — e até movimentos vazios <code>&epsilon;</code>, que mudam de estado sem ler símbolo. A ferramenta identifica o tipo sozinha (campo <b>Tipo</b>).</p>
+      <h4>Como montar</h4>
+      <ul>
+        <li><b>Adicionar estado</b> (ou duplo-clique na tela).</li>
+        <li><b>Adicionar transição</b>: clique na origem, depois no destino e digite os símbolos (ex.: <code>a, b</code>). Use <code>&epsilon;</code> ou deixe em branco para movimento vazio.</li>
+        <li>Defina o <b>inicial</b> (seta) e os <b>finais</b> (anel duplo; duplo-clique num estado também alterna).</li>
+      </ul>
+      <h4>Recursos</h4>
+      <p>O <b>Passo a passo</b> mostra o conjunto de estados ativos a cada símbolo. A seção <b>Gramática regular</b> converte o autômato numa gramática linear à direita equivalente.</p>
+      <h4>Experimente</h4>
+      <p>Carregue <code>contém "aa" ou "bb"</code> e compare AFD vs AFND, ou veja <code>binário divisível por 3</code>.</p>`},
+    pda:{tag:"AP",title:"Autômato de Pilha",html:`
+      <p>O <b>autômato de pilha</b> reconhece as <b>linguagens livres de contexto</b>. É um autômato finito com uma <b>pilha</b> (LIFO) auxiliar: ele empilha e desempilha símbolos, ganhando memória para contar e casar — como em parênteses balanceados.</p>
+      <div class="tut-tuple">M = (Q, &Sigma;, &Gamma;, &delta;, q&#8320;, Z, F)<br>&Gamma; alfabeto da pilha · Z símbolo inicial da pilha</div>
+      <h4>Transições</h4>
+      <p>Formato <code>ler , desempilha ; empilha</code>. Ex.: <code>a , Z ; aZ</code> — ao ler <b>a</b> com <b>Z</b> no topo, desempilha <b>Z</b> e empilha <b>aZ</b> (com <b>a</b> no topo). Use <code>&epsilon;</code> em qualquer parte para não ler / não desempilhar / não empilhar.</p>
+      <h4>Não-determinismo</h4>
+      <p>O AP é naturalmente não-determinístico. A ferramenta procura uma <b>computação aceitadora</b>; o Passo a passo reproduz essa computação mostrando a pilha crescer e encolher.</p>
+      <h4>Aceitação</h4>
+      <p>Em <b>Pilha &amp; aceitação</b>, escolha o critério: por <b>estado final</b> ou por <b>pilha vazia</b>.</p>
+      <h4>Experimente</h4>
+      <p>Carregue <code>palíndromos ww^R</code> (estado final) ou <code>parênteses balanceados</code> (pilha vazia).</p>`},
+    tm:{tag:"MT",title:"Máquina de Turing",html:`
+      <p>A <b>máquina de Turing</b> é o modelo mais poderoso desta lista: reconhece as linguagens <b>recursivamente enumeráveis</b> e simula qualquer algoritmo. Tem uma <b>fita infinita</b> que pode ser <b>lida e escrita</b>, com uma cabeça que se move para os dois lados.</p>
+      <div class="tut-tuple">M = (Q, &Sigma;, &Gamma;, &delta;, q&#8320;, &#9633;, F)<br>&Gamma; alfabeto da fita · &#9633; símbolo branco</div>
+      <h4>Transições</h4>
+      <p>Formato <code>ler ; escreve , mov</code>. Ex.: <code>a ; X , D</code> — lê <b>a</b>, escreve <b>X</b> e move à <b>direita</b>. Movimento: <code>D</code> direita, <code>E</code> esquerda, <code>P</code> parado. O branco é <code>&#9633;</code>.</p>
+      <h4>Aceitação</h4>
+      <p>A máquina aceita ao <b>parar</b> (sem transição aplicável) num estado final. Se entrar em laço, a execução para num limite de passos e avisa.</p>
+      <h4>Por que é mais forte que o AP</h4>
+      <p>Como a fita permite reler e reescrever qualquer posição, a MT reconhece linguagens que <b>não</b> são livres de contexto, como <code>a^n b^n c^n</code>.</p>
+      <h4>Experimente</h4>
+      <p>Carregue <code>a^n b^n c^n</code> e percorra a fita no Passo a passo, observando as marcações X / Y / Z.</p>`},
+    moore:{tag:"MO",title:"Máquina de Moore",html:`
+      <p>Moore e Mealy são <b>transdutores</b>: em vez de aceitar/rejeitar, <b>produzem uma saída</b>. Na máquina de <b>Moore</b> a saída está associada aos <b>estados</b>.</p>
+      <div class="tut-tuple">M = (Q, &Sigma;, &Delta;, &delta;, q&#8320;, &lambda;)<br>&Delta; alfabeto de saída · &lambda;: Q &rarr; &Delta;* (saída de cada estado)</div>
+      <h4>Como funciona</h4>
+      <p>A saída é a concatenação das saídas dos estados visitados: <code>&lambda;(q&#8320;) &lambda;(q&#8321;) … &lambda;(q&#8345;)</code> — ou seja, <b>n+1</b> símbolos para entrada de tamanho n (inclui a saída do estado inicial, antes de ler qualquer símbolo).</p>
+      <h4>Como montar</h4>
+      <p>Cada estado mostra sua saída como <code>/saída</code> dentro do círculo; edite no painel de seleção. As transições levam só o símbolo de entrada. Não há estados finais.</p>
+      <h4>Experimente</h4>
+      <p>Carregue <code>paridade de a's</code>: a saída <code>0</code>/<code>1</code> do estado reflete se o número de a's lidos é par ou ímpar.</p>`},
+    mealy:{tag:"ME",title:"Máquina de Mealy",html:`
+      <p>A máquina de <b>Mealy</b> é um transdutor em que a saída está nas <b>transições</b> — podendo depender do estado atual <i>e</i> do símbolo lido.</p>
+      <div class="tut-tuple">M = (Q, &Sigma;, &Delta;, &delta;, q&#8320;, &lambda;)<br>&lambda;: Q &times; &Sigma; &rarr; &Delta;* (saída de cada transição)</div>
+      <h4>Como funciona</h4>
+      <p>A saída tem <b>n</b> símbolos (um por transição). Cada transição é <code>entrada / saída</code> — ex.: <code>a / x</code> emite <b>x</b> ao ler <b>a</b>. Use <code>&epsilon;</code> para saída vazia (suprime o símbolo).</p>
+      <h4>Moore &times; Mealy</h4>
+      <p>As duas têm o mesmo poder, mas a Mealy reage já na transição e costuma precisar de <b>menos estados</b>. A Moore emite um símbolo a mais (o do estado inicial).</p>
+      <h4>Experimente</h4>
+      <p>Carregue <code>complemento binário</code> (inverte cada bit) ou <code>compactar brancos</code>, que usa saída <code>&epsilon;</code> para colapsar brancos repetidos.</p>`}
+  };
+  let curTut="fa";
+  function showTutorial(type){
+    curTut=type; const t=TUT[type];
+    document.getElementById("tutTag").textContent=t.tag;
+    document.getElementById("tutTitle").textContent=t.title;
+    document.getElementById("tutBody").innerHTML=t.html;
+    document.querySelectorAll("#tutTabs button").forEach(b=>b.classList.toggle("on",b.dataset.t===type));
+    document.getElementById("tutBody").scrollTop=0;
+  }
+  function openTutorial(){ showTutorial(machineType); document.getElementById("tutModal").classList.add("open"); }
+  function closeTutorial(){ document.getElementById("tutModal").classList.remove("open"); }
+  document.getElementById("tutorialBtn").onclick=openTutorial;
+  document.getElementById("tutClose").onclick=closeTutorial;
+  document.getElementById("tutDone").onclick=closeTutorial;
+  document.getElementById("tutLoad").onclick=()=>{ switchMode(curTut); closeTutorial(); };
+  document.getElementById("tutModal").addEventListener("click",e=>{ if(e.target.id==="tutModal") closeTutorial(); });
+  document.querySelectorAll("#tutTabs button").forEach(b=>b.onclick=()=>showTutorial(b.dataset.t));
+
+  // ---------- example builders ----------
+  function mkFA(sts,init,fin,ts){
+    machineType="fa"; states=[];trans=[];finals=new Set();nextId=0;
+    const m={};
+    for(const [label,x,y] of sts){ const id=uid(); m[label]={id}; states.push({id,x:Math.round(x),y:Math.round(y),label}); }
+    initial=m[init].id;
+    for(const f of fin) finals.add(m[f].id);
+    for(const [f,t,s] of ts) trans.push({id:uid(),from:m[f].id,to:m[t].id,sym:s});
+    selected=null; sim=null; applyModeUI(); render(); renderProps(); updateHint();
+  }
+  function mkPDA(sts,init,fin,ts,initStack,acc){
+    machineType="pda"; states=[];trans=[];finals=new Set();nextId=0;
+    const m={};
+    for(const [label,x,y] of sts){ const id=uid(); m[label]={id}; states.push({id,x:Math.round(x),y:Math.round(y),label}); }
+    initial=m[init].id;
+    for(const f of fin) finals.add(m[f].id);
+    for(const [f,t,r,p,pu] of ts) trans.push({id:uid(),from:m[f].id,to:m[t].id,read:r,pop:p,push:pu});
+    pdaInit=initStack; pdaAccept=acc;
+    document.getElementById("initStack").value=initStack;
+    document.querySelectorAll("#pdaConfig [data-acc]").forEach(x=>x.classList.toggle("on",x.dataset.acc===acc));
+    selected=null; sim=null; applyModeUI(); render(); renderProps(); updateHint();
+  }
+  function setTest(v){ document.getElementById("testStr").value=v; document.getElementById("verdict").className="verdict"; sim=null; renderTape(); }
+  function setBatch(arr){ document.getElementById("batchIn").value=arr.join("\n"); document.getElementById("batchOut").innerHTML=""; }
+  function C(){ return {w:stage.clientWidth,h:stage.clientHeight,cx:stage.clientWidth*0.5,cy:stage.clientHeight*0.5}; }
+
+  const FA_EX={
+    aabb(){ const {cx,cy}=C();
+      mkFA([["q0",cx-160,cy],["q1",cx,cy-110],["q2",cx,cy+110],["qf",cx+170,cy]],"q0",["qf"],[
+        ["q0","q1","a"],["q0","q2","b"],["q1","qf","a"],["q1","q2","b"],
+        ["q2","q1","a"],["q2","qf","b"],["qf","qf","a"],["qf","qf","b"]]);
+      setTest("baaa"); setBatch(["aab","bbab","baaa","ba"]); },
+    "nfa-aabb"(){ const {cx,cy}=C();
+      mkFA([["q0",cx-150,cy],["q1",cx+20,cy-90],["q2",cx+20,cy+90],["qf",cx+200,cy]],"q0",["qf"],[
+        ["q0","q0","a"],["q0","q0","b"],["q0","q1","a"],["q1","qf","a"],
+        ["q0","q2","b"],["q2","qf","b"],["qf","qf","a"],["qf","qf","b"]]);
+      setTest("bbab"); setBatch(["ab","bbab","baaa","ba"]); },
+    ends01(){ const {cx,cy}=C();
+      mkFA([["q0",cx-180,cy],["q1",cx,cy],["q2",cx+180,cy]],"q0",["q2"],[
+        ["q0","q1","0"],["q0","q0","1"],["q1","q1","0"],["q1","q2","1"],["q2","q1","0"],["q2","q0","1"]]);
+      setTest("1101"); setBatch(["01","1101","010","0011"]); },
+    "even-a"(){ const {cx,cy}=C();
+      mkFA([["q0",cx-110,cy],["q1",cx+110,cy]],"q0",["q0"],[
+        ["q0","q1","a"],["q1","q0","a"],["q0","q0","b"],["q1","q1","b"]]);
+      setTest("abba"); setBatch(["","aa","aba","baab","aaa"]); },
+    eps(){ const {cx,cy}=C();
+      mkFA([["q0",cx-150,cy],["q1",cx+150,cy]],"q0",["q0","q1"],[
+        ["q0","q0","a"],["q0","q1",EPS],["q1","q1","b"]]);
+      setTest("aabb"); setBatch(["","aaa","bbb","aabb","ba"]); },
+    "no-aa"(){ const {cx,cy}=C();
+      mkFA([["q0",cx-120,cy],["q1",cx+120,cy],["qd",cx,cy+150]],"q0",["q0","q1"],[
+        ["q0","q1","a"],["q0","q0","b"],["q1","qd","a"],["q1","q0","b"],["qd","qd","a"],["qd","qd","b"]]);
+      setTest("abab"); setBatch(["","ab","aba","aab","baba","baab"]); },
+    "substr-aba"(){ const {cx,cy}=C();
+      mkFA([["q0",cx-210,cy],["q1",cx-70,cy],["q2",cx+70,cy],["q3",cx+210,cy]],"q0",["q3"],[
+        ["q0","q1","a"],["q0","q0","b"],["q1","q1","a"],["q1","q2","b"],["q2","q3","a"],["q2","q0","b"],["q3","q3","a"],["q3","q3","b"]]);
+      setTest("baba"); setBatch(["aba","baba","abba","ab","ababa"]); },
+    div3(){ const {cx,cy}=C();
+      mkFA([["r0",cx,cy-130],["r1",cx+150,cy+80],["r2",cx-150,cy+80]],"r0",["r0"],[
+        ["r0","r0","0"],["r0","r1","1"],["r1","r2","0"],["r1","r0","1"],["r2","r1","0"],["r2","r2","1"]]);
+      setTest("110"); setBatch(["0","11","110","1001","1011"]); },
+    "third-last-1"(){ const {cx,cy}=C();
+      mkFA([["q0",cx-210,cy],["q1",cx-70,cy],["q2",cx+70,cy],["q3",cx+210,cy]],"q0",["q3"],[
+        ["q0","q0","0"],["q0","q0","1"],["q0","q1","1"],["q1","q2","0"],["q1","q2","1"],["q2","q3","0"],["q2","q3","1"]]);
+      setTest("100"); setBatch(["100","0100","000","1011","111"]); }
+  };
+  const PDA_EX={
+    pal(){ const {cx,cy}=C();
+      mkPDA([["q0",cx-170,cy],["q1",cx+10,cy],["qf",cx+200,cy]],"q0",["qf"],[
+        ["q0","q0","a","ε","a"],["q0","q0","b","ε","b"],
+        ["q0","q1","ε","ε",""],
+        ["q1","q1","a","a",""],["q1","q1","b","b",""],
+        ["q1","qf","ε","Z",""]
+      ],"Z","final");
+      setTest("abba"); setBatch(["","aa","abba","aba","abab","baab"]); },
+    anbn(){ const {cx,cy}=C();
+      mkPDA([["q0",cx-150,cy],["q1",cx+30,cy],["qf",cx+210,cy]],"q0",["qf"],[
+        ["q0","q0","a","ε","A"],
+        ["q0","q1","b","A",""],
+        ["q1","q1","b","A",""],
+        ["q1","qf","ε","Z",""]
+      ],"Z","final");
+      setTest("aabb"); setBatch(["ab","aabb","aaabbb","aab","abb",""]); },
+    paren(){ const {cx,cy}=C();
+      mkPDA([["q0",cx,cy]],"q0",[],[
+        ["q0","q0","(","ε","X"],
+        ["q0","q0",")","X",""],
+        ["q0","q0","ε","Z",""]
+      ],"Z","empty");
+      setTest("(())"); setBatch(["","()","(())","(()","())","(()())"]); },
+    anb2n(){ const {cx,cy}=C();
+      mkPDA([["q0",cx-150,cy],["q1",cx+30,cy],["qf",cx+210,cy]],"q0",["qf"],[
+        ["q0","q0","a","ε","AA"],
+        ["q0","q1","b","A",""],
+        ["q1","q1","b","A",""],
+        ["q1","qf","ε","Z",""]
+      ],"Z","final");
+      setTest("aabbbb"); setBatch(["abb","aabbbb","aaabbbbbb","ab","aabb"]); },
+    eq(){ const {cx,cy}=C();
+      mkPDA([["q0",cx-110,cy],["qf",cx+160,cy]],"q0",["qf"],[
+        ["q0","q0","a","Z","AZ"],["q0","q0","a","A","AA"],["q0","q0","a","B",""],
+        ["q0","q0","b","Z","BZ"],["q0","q0","b","B","BB"],["q0","q0","b","A",""],
+        ["q0","qf","ε","Z","Z"]
+      ],"Z","final");
+      setTest("aabb"); setBatch(["","ab","aabb","abab","aab","ba"]); }
+  };
+
+  function mkTM(sts,init,fin,ts){
+    machineType="tm"; states=[];trans=[];finals=new Set();nextId=0;
+    const m={};
+    for(const [label,x,y] of sts){ const id=uid(); m[label]={id}; states.push({id,x:Math.round(x),y:Math.round(y),label}); }
+    initial=m[init].id;
+    for(const f of fin) finals.add(m[f].id);
+    for(const [f,t,r,w,mv] of ts) trans.push({id:uid(),from:m[f].id,to:m[t].id,read:r,write:w,move:mv});
+    selected=null; sim=null; applyModeUI(); render(); renderProps(); updateHint();
+  }
+  const TM_EX={
+    anbn(){ const {cx,cy}=C();
+      mkTM([["q0",cx-220,cy],["q1",cx-50,cy-120],["q2",cx-50,cy+120],["q3",cx+150,cy-120],["qf",cx+220,cy+30]],"q0",["qf"],[
+        ["q0","q1","a","X","R"],["q0","q3","Y","Y","R"],
+        ["q1","q1","a","a","R"],["q1","q1","Y","Y","R"],["q1","q2","b","Y","L"],
+        ["q2","q2","a","a","L"],["q2","q2","Y","Y","L"],["q2","q0","X","X","R"],
+        ["q3","q3","Y","Y","R"],["q3","qf","□","□","P"]
+      ]);
+      setTest("aaabbb"); setBatch(["ab","aabb","aaabbb","aaabb","abb",""]); },
+    pal(){ const {cx,cy}=C();
+      mkTM([["q0",cx-220,cy],["ra",cx-60,cy-130],["ca",cx+130,cy-130],["rb",cx-60,cy+130],["cb",cx+130,cy+130],["ret",cx-220,cy+130],["qf",cx+230,cy]],"q0",["qf"],[
+        ["q0","ra","a","□","R"],["q0","rb","b","□","R"],["q0","qf","□","□","P"],
+        ["ra","ra","a","a","R"],["ra","ra","b","b","R"],["ra","ca","□","□","L"],
+        ["ca","ret","a","□","L"],["ca","qf","□","□","P"],
+        ["rb","rb","a","a","R"],["rb","rb","b","b","R"],["rb","cb","□","□","L"],
+        ["cb","ret","b","□","L"],["cb","qf","□","□","P"],
+        ["ret","ret","a","a","L"],["ret","ret","b","b","L"],["ret","q0","□","□","R"]
+      ]);
+      setTest("abba"); setBatch(["","a","abba","aba","ab","abab","abcba"]); },
+    anbncn(){ const {cx,cy}=C();
+      mkTM([["q0",cx-250,cy],["q1",cx-110,cy-130],["q2",cx+70,cy-130],["q3",cx-110,cy+130],["q4",cx+110,cy+40],["q5",cx+230,cy-60],["qf",cx+250,cy+120]],"q0",["qf"],[
+        ["q0","q1","a","X","R"],["q0","q4","Y","Y","R"],
+        ["q1","q1","a","a","R"],["q1","q1","Y","Y","R"],["q1","q2","b","Y","R"],
+        ["q2","q2","b","b","R"],["q2","q2","Z","Z","R"],["q2","q3","c","Z","L"],
+        ["q3","q3","a","a","L"],["q3","q3","b","b","L"],["q3","q3","Y","Y","L"],["q3","q3","Z","Z","L"],["q3","q0","X","X","R"],
+        ["q4","q4","Y","Y","R"],["q4","q5","Z","Z","R"],
+        ["q5","q5","Z","Z","R"],["q5","qf","□","□","P"]
+      ]);
+      setTest("aabbcc"); setBatch(["abc","aabbcc","aaabbbccc","aabbc","abcc",""]); },
+    "equal-ab"(){ const {cx,cy}=C();
+      mkTM([["q0",cx-230,cy],["qa",cx-40,cy-120],["qb",cx-40,cy+120],["qret",cx+150,cy-120],["qacc",cx+160,cy+40]],"q0",["qacc"],[
+        ["q0","q0","X","X","R"],["q0","q0","Y","Y","R"],["q0","qa","a","X","R"],["q0","qb","b","Y","R"],["q0","qacc","□","□","P"],
+        ["qa","qa","a","a","R"],["qa","qa","X","X","R"],["qa","qa","Y","Y","R"],["qa","qret","b","Y","L"],
+        ["qb","qb","b","b","R"],["qb","qb","X","X","R"],["qb","qb","Y","Y","R"],["qb","qret","a","X","L"],
+        ["qret","qret","a","a","L"],["qret","qret","b","b","L"],["qret","qret","X","X","L"],["qret","qret","Y","Y","L"],["qret","q0","□","□","R"]
+      ]);
+      setTest("abba"); setBatch(["","ab","ba","abba","aabb","aab","aabbab"]); },
+    binpal(){ const {cx,cy}=C();
+      mkTM([["q0",cx-220,cy],["r0",cx-60,cy-130],["c0",cx+130,cy-130],["r1",cx-60,cy+130],["c1",cx+130,cy+130],["ret",cx-220,cy+130],["qf",cx+230,cy]],"q0",["qf"],[
+        ["q0","r0","0","□","R"],["q0","r1","1","□","R"],["q0","qf","□","□","P"],
+        ["r0","r0","0","0","R"],["r0","r0","1","1","R"],["r0","c0","□","□","L"],
+        ["c0","ret","0","□","L"],["c0","qf","□","□","P"],
+        ["r1","r1","0","0","R"],["r1","r1","1","1","R"],["r1","c1","□","□","L"],
+        ["c1","ret","1","□","L"],["c1","qf","□","□","P"],
+        ["ret","ret","0","0","L"],["ret","ret","1","1","L"],["ret","q0","□","□","R"]
+      ]);
+      setTest("1001"); setBatch(["","0","101","1001","10110","10","100"]); }
+  };
+
+  function mkMoore(sts,init,ts){
+    machineType="moore"; states=[];trans=[];finals=new Set();nextId=0;
+    const m={};
+    for(const [label,x,y,output] of sts){ const id=uid(); m[label]={id}; states.push({id,x:Math.round(x),y:Math.round(y),label,output:output||""}); }
+    initial=m[init].id;
+    for(const [f,t,s] of ts) trans.push({id:uid(),from:m[f].id,to:m[t].id,sym:s});
+    selected=null;sim=null;applyModeUI();render();renderProps();updateHint();
+  }
+  function mkMealy(sts,init,ts){
+    machineType="mealy"; states=[];trans=[];finals=new Set();nextId=0;
+    const m={};
+    for(const [label,x,y] of sts){ const id=uid(); m[label]={id}; states.push({id,x:Math.round(x),y:Math.round(y),label}); }
+    initial=m[init].id;
+    for(const [f,t,s,o] of ts) trans.push({id:uid(),from:m[f].id,to:m[t].id,sym:s,out:o});
+    selected=null;sim=null;applyModeUI();render();renderProps();updateHint();
+  }
+  const MOORE_EX={
+    parity(){ const {cx,cy}=C();
+      mkMoore([["q0",cx-120,cy,"0"],["q1",cx+120,cy,"1"]],"q0",[
+        ["q0","q1","a"],["q1","q0","a"],["q0","q0","b"],["q1","q1","b"]]);
+      setTest("aab"); setBatch(["","a","aa","aab","abab"]); },
+    mod3(){ const {cx,cy}=C();
+      mkMoore([["r0",cx,cy-130,"0"],["r1",cx+150,cy+80,"1"],["r2",cx-150,cy+80,"2"]],"r0",[
+        ["r0","r1","a"],["r1","r2","a"],["r2","r0","a"],
+        ["r0","r0","b"],["r1","r1","b"],["r2","r2","b"]]);
+      setTest("aaaa"); setBatch(["","a","aa","aaa","baaab"]); },
+    "detect-aa"(){ const {cx,cy}=C();
+      mkMoore([["q0",cx-160,cy,"0"],["qa",cx,cy,"0"],["qaa",cx+160,cy,"1"]],"q0",[
+        ["q0","qa","a"],["q0","q0","b"],["qa","qaa","a"],["qa","q0","b"],["qaa","qaa","a"],["qaa","q0","b"]]);
+      setTest("aab"); setBatch(["","aa","aab","baab","aaa"]); },
+    "len-parity"(){ const {cx,cy}=C();
+      mkMoore([["par",cx-120,cy,"E"],["impar",cx+120,cy,"O"]],"par",[
+        ["par","impar","a"],["impar","par","a"],["par","impar","b"],["impar","par","b"]]);
+      setTest("abba"); setBatch(["","a","ab","aba","abab"]); }
+  };
+  const MEALY_EX={
+    complement(){ const {cx,cy}=C();
+      mkMealy([["q0",cx,cy]],"q0",[
+        ["q0","q0","0","1"],["q0","q0","1","0"]]);
+      setTest("0110"); setBatch(["","0","1","0110","1010"]); },
+    delay(){ const {cx,cy}=C();
+      mkMealy([["s",cx-160,cy],["p0",cx+60,cy-100],["p1",cx+60,cy+100]],"s",[
+        ["s","p0","0","0"],["s","p1","1","0"],
+        ["p0","p0","0","0"],["p0","p1","1","0"],
+        ["p1","p0","0","1"],["p1","p1","1","1"]]);
+      setTest("110"); setBatch(["","1","10","110","1011"]); },
+    "double-a"(){ const {cx,cy}=C();
+      mkMealy([["q0",cx,cy]],"q0",[
+        ["q0","q0","a","aa"],["q0","q0","b","b"]]);
+      setTest("abba"); setBatch(["","a","ab","abba","baab"]); },
+    blanks(){ const {cx,cy}=C();
+      mkMealy([["q",cx-120,cy],["p",cx+120,cy]],"q",[
+        ["q","q","a","a"],["q","p","_","_"],
+        ["p","q","a","a"],["p","p","_",""]]);
+      setTest("__aa"); setBatch(["","_","__","__aa","a__a_"]); }
+  };
+
+  window.addEventListener("resize",()=>render());
+  setTool("select");
+  applyModeUI();
+  FA_EX.aabb();
+  renderTape();
+})();
+</script>
