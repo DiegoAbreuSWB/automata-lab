@@ -138,6 +138,10 @@
   .grammar .eps{color:#b9b4a7;font-style:italic}
   .grammar .note{font-family:var(--ui);font-size:11px;color:var(--ink-soft);margin-top:11px;line-height:1.55;border-top:1px solid var(--line);padding-top:9px}
 
+  .regexbox{font-family:var(--mono);font-size:15px;line-height:1.6;background:#f7f5ef;border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-top:12px;color:var(--ink);word-break:break-word}
+  .renote{font-family:var(--ui);font-size:11px;color:var(--ink-soft);margin-top:9px;line-height:1.55}
+  .mapbox{font-family:var(--mono);font-size:12px;line-height:1.7;background:#f7f5ef;border:1px solid var(--line);border-radius:9px;padding:10px 12px;margin-top:9px;color:var(--ink);word-break:break-word}
+
   .legend{display:flex;flex-direction:column;gap:7px;font-size:12px;color:var(--ink-soft)}
   .legend>div{display:flex;align-items:center;gap:9px}
   .lg-state{width:18px;height:18px;border-radius:50%;border:2px solid var(--ink);flex-shrink:0}
@@ -171,6 +175,28 @@
   .modal-foot{padding:13px 22px;border-top:1px solid var(--line);display:flex;gap:8px;align-items:center}
   .modal-foot .spacer{flex:1}
 
+  #exBar{position:absolute;left:12px;right:12px;top:10px;z-index:16;background:var(--ink);color:#fff;border-radius:12px;padding:11px 14px;display:none;gap:12px;align-items:flex-start;box-shadow:var(--shadow)}
+  #exBar.on{display:flex}
+  #exBar .exlabel{flex:1;min-width:0}
+  #exBar .extitle{font-family:var(--disp);font-weight:700;font-size:13px}
+  #exBar .exprompt{font-size:12px;color:#c7d0d9;line-height:1.45;margin-top:2px}
+  #exBar #exFeedback{font-size:12px;font-weight:600;margin-top:6px}
+  #exBar .exbtns{display:flex;gap:7px;flex-shrink:0}
+  #exBar button{border:none;border-radius:8px;padding:8px 13px;font-size:12.5px;font-weight:600}
+  #exBar .exck{background:var(--accept);color:#fff}
+  #exBar .exx{background:#2b3945;color:#cdd5dc}
+  .extabs{display:flex;gap:6px;padding:14px 22px 0}
+  .extabs button{border:1px solid var(--line-strong);background:#fff;border-radius:20px;padding:5px 13px;font-size:12px;font-weight:600;color:var(--ink-soft)}
+  .extabs button.on{background:var(--primary);color:#fff;border-color:var(--primary)}
+  .exlist{display:flex;flex-direction:column;gap:6px;margin-top:2px}
+  .exitem{display:flex;align-items:center;gap:10px;border:1px solid var(--line-strong);border-radius:9px;padding:10px 12px;cursor:pointer;background:#fff}
+  .exitem:hover{border-color:var(--ink)}
+  .exitem.sel{border-color:var(--primary);box-shadow:0 0 0 3px var(--primary-soft)}
+  .exitem .extag{font-family:var(--mono);font-size:10px;font-weight:700;color:#fff;background:var(--ink-soft);border-radius:5px;padding:2px 6px}
+  .exitem .exname{flex:1;font-size:13px;font-weight:600}
+  .exitem .exdone{color:var(--accept);font-weight:700}
+  .exprompt-box{background:#f7f5ef;border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-top:12px;font-size:13.5px;line-height:1.5}
+
   @media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
   @media (max-width:900px){
     .app{grid-template-columns:52px 1fr;grid-template-rows:auto 1.1fr .9fr}
@@ -191,6 +217,9 @@
       <button data-m="tm">MT</button>
     </div>
     <div class="top-actions">
+      <button class="btn" id="exBtn" style="background:var(--accept);border-color:var(--accept);color:#fff">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 3h10v10H3zM5.5 8l2 2 3.5-4"/></svg>Exercícios
+      </button>
       <button class="btn primary" id="tutorialBtn">
         <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 4.5C8 3.5 7 2.5 4.5 2.5S2 3 2 3v9s.5-.5 2.5-.5S8 12.5 8 13.5m0-9C8 3.5 9 2.5 11.5 2.5S14 3 14 3v9s-.5-.5-2.5-.5S8 12.5 8 13.5m0-9v9"/></svg>Tutorial
       </button>
@@ -233,6 +262,17 @@
 
   <div class="stage" id="stage">
     <svg id="svg" xmlns="http://www.w3.org/2000/svg"></svg>
+    <div id="exBar">
+      <div class="exlabel">
+        <div class="extitle" id="exBarTitle"></div>
+        <div class="exprompt" id="exBarPrompt"></div>
+        <div id="exFeedback"></div>
+      </div>
+      <div class="exbtns">
+        <button class="exck" id="exCheck">Corrigir</button>
+        <button class="exx" id="exExit">Sair</button>
+      </div>
+    </div>
     <div class="hint" id="hint"></div>
     <div class="empty-note" id="emptyNote">
       <div>Uma página em branco.
@@ -316,6 +356,42 @@
       <div id="grammarOut"></div>
     </div>
 
+    <div class="sec" id="regexSec">
+      <h3><span class="dot"></span>Expressão regular</h3>
+      <button class="run-btn" id="genRegex" style="width:100%;justify-content:center">Converter autômato → ER</button>
+      <div id="regexOut"></div>
+    </div>
+
+    <div class="sec" id="opsSec">
+      <h3><span class="dot"></span>Operações regulares</h3>
+      <button class="run-btn" id="opDet" style="width:100%;justify-content:center;margin-bottom:8px">Determinizar · AFND → AFD</button>
+      <button class="run-btn" id="opMin" style="width:100%;justify-content:center">Minimizar AFD</button>
+      <div id="opNote" class="renote"></div>
+    </div>
+
+    <div class="sec" id="thompsonSec">
+      <h3><span class="dot"></span>ER → autômato (Thompson)</h3>
+      <div class="field"><input type="text" id="reInput" placeholder="(a+b)*abb" autocomplete="off"><button class="run-btn" id="buildRE">Construir</button></div>
+      <div id="reBuildNote" class="renote">Notação: <b>+</b> união, justaposição concatenação, <b>*</b> estrela, <b>( )</b> agrupam, <b>ε</b> vazio.</div>
+    </div>
+
+    <div class="sec" id="twoSec">
+      <h3><span class="dot"></span>Comparar &amp; operar (2 autômatos)</h3>
+      <div class="toggles" style="margin-bottom:8px">
+        <button class="tg" id="storeA">Guardar como A</button>
+        <button class="tg" id="storeB">Guardar como B</button>
+      </div>
+      <div id="slotStatus" style="font-family:var(--mono);font-size:12px;color:var(--ink-soft);margin-bottom:10px">A: — · B: —</div>
+      <button class="run-btn" id="opEquiv" style="width:100%;justify-content:center;margin-bottom:8px">A ≡ B ? (equivalência)</button>
+      <div class="toggles" style="margin-bottom:8px">
+        <button class="tg" id="opUnion">A ∪ B</button>
+        <button class="tg" id="opInter">A ∩ B</button>
+        <button class="tg" id="opDiff">A − B</button>
+      </div>
+      <button class="run-btn" id="opComp" style="width:100%;justify-content:center">¬ (complemento do atual)</button>
+      <div id="opTwoNote" class="renote"></div>
+    </div>
+
     <div class="sec">
       <h3><span class="dot"></span>Legenda</h3>
       <div id="legendBody"></div>
@@ -343,6 +419,29 @@
       <span class="spacer"></span>
       <button class="btn" id="tutLoad">Abrir este modo</button>
       <button class="run-btn" id="tutDone" style="background:var(--primary)">Entendi</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="exModal">
+  <div class="modal">
+    <div class="modal-head">
+      <span class="tag" style="background:var(--accept)">EXERCÍCIOS</span>
+      <h2>Modo exercício</h2>
+      <button class="modal-close" id="exModalClose" title="Fechar">×</button>
+    </div>
+    <div class="extabs" id="exTabs">
+      <button data-x="praticar" class="on">Praticar</button>
+      <button data-x="prof">Professor</button>
+    </div>
+    <div class="modal-body" id="exModalBody"></div>
+    <div class="modal-foot">
+      <span id="exProgress" style="font-size:12px;color:var(--ink-soft)"></span>
+      <span class="spacer"></span>
+      <button class="btn" id="exImport">Importar…</button>
+      <input type="file" id="exFile" accept=".json" hidden>
+      <button class="btn" id="exCSV">Progresso (CSV)</button>
+      <button class="run-btn" id="exModalDone" style="background:var(--primary)">Fechar</button>
     </div>
   </div>
 </div>
@@ -442,6 +541,7 @@
     document.getElementById("emptyNote").style.display = states.length? "none":"grid";
     updateStats();
     if(grammarShown && machineType==="fa") generateGrammar();
+    if(regexShown && machineType==="fa") generateRegex();
   }
 
   function el(tag, attrs){
@@ -469,7 +569,8 @@
       const o = el("text",{x:s.x,y:s.y+10,"text-anchor":"middle","dominant-baseline":"central","font-family":"var(--mono)","font-size":12,"font-weight":700,fill:"var(--primary)"});
       o.textContent="/"+(s.output?s.output:"ε"); g.appendChild(o);
     } else {
-      const t = el("text",{x:s.x,y:s.y,"text-anchor":"middle","dominant-baseline":"central","font-family":"var(--mono)","font-size":15,"font-weight":600,fill:isActive?"#8a5b00":"var(--ink)"});
+      const fs = s.label.length<=3?15 : s.label.length<=5?12 : s.label.length<=8?10 : 8.5;
+      const t = el("text",{x:s.x,y:s.y,"text-anchor":"middle","dominant-baseline":"central","font-family":"var(--mono)","font-size":fs,"font-weight":600,fill:isActive?"#8a5b00":"var(--ink)"});
       t.textContent = s.label; g.appendChild(t);
     }
     svg.appendChild(g);
@@ -1096,6 +1197,263 @@
   }
   document.getElementById("genGrammar").onclick=()=>{ grammarShown=true; generateGrammar(); };
 
+  // ---------- AF -> Expressão Regular (eliminação de estados / GNFA) ----------
+  const RE_EMPTY={t:'empty'}, RE_EPS={t:'eps'};
+  const reSym=c=>({t:'sym',c});
+  const RE_PREC={empty:4,eps:4,sym:4,union:1,concat:2,star:3};
+  function reRender(n,pp){
+    let s;
+    if(n.t==='empty') s='∅';
+    else if(n.t==='eps') s='ε';
+    else if(n.t==='sym') s=n.c;
+    else if(n.t==='union') s=n.items.map(x=>reRender(x,RE_PREC.union)).join('+');
+    else if(n.t==='concat') s=n.items.map(x=>reRender(x,RE_PREC.concat)).join('');
+    else s=reRender(n.item,RE_PREC.star)+'*';
+    return RE_PREC[n.t]<pp?'('+s+')':s;
+  }
+  const reKey=n=>reRender(n,0);
+  function reUnion(a,b){
+    const items=[]; const push=x=>{ if(x.t==='union') x.items.forEach(push); else if(x.t!=='empty') items.push(x); };
+    push(a); push(b);
+    const seen=new Set(), out=[];
+    for(const it of items){ const k=reKey(it); if(!seen.has(k)){ seen.add(k); out.push(it); } }
+    if(out.length===0) return RE_EMPTY;
+    if(out.length===1) return out[0];
+    return {t:'union',items:out};
+  }
+  function reConcat(a,b){
+    if(a.t==='empty'||b.t==='empty') return RE_EMPTY;
+    const items=[]; const push=x=>{ if(x.t==='concat') x.items.forEach(push); else if(x.t!=='eps') items.push(x); };
+    push(a); push(b);
+    if(items.length===0) return RE_EPS;
+    if(items.length===1) return items[0];
+    return {t:'concat',items};
+  }
+  function reStar(a){ if(a.t==='empty'||a.t==='eps') return RE_EPS; if(a.t==='star') return a; return {t:'star',item:a}; }
+  function faToRegex(){
+    if(initial==null) return null;
+    const ids=states.map(s=>s.id), S='__S__', A='__A__', nodes=[S,...ids,A];
+    const E={}, get=(i,j)=>(E[i]&&E[i][j])?E[i][j]:RE_EMPTY, set=(i,j,r)=>{ if(!E[i])E[i]={}; E[i][j]=r; };
+    for(const t of trans){ const r=t.sym===EPS?RE_EPS:reSym(t.sym); set(t.from,t.to,reUnion(get(t.from,t.to),r)); }
+    set(S,initial,RE_EPS);
+    for(const f of finals) if(stateById(f)) set(f,A,reUnion(get(f,A),RE_EPS));
+    for(const q of ids){
+      const loopStar=reStar(get(q,q));
+      const preds=nodes.filter(i=>i!==q && get(i,q).t!=='empty');
+      const succs=nodes.filter(j=>j!==q && get(q,j).t!=='empty');
+      for(const i of preds) for(const j of succs)
+        set(i,j, reUnion(get(i,j), reConcat(get(i,q), reConcat(loopStar, get(q,j)))));
+      for(const x of nodes) if(E[x]) delete E[x][q];
+      delete E[q];
+    }
+    return get(S,A);
+  }
+  let regexShown=false, lastRegexStr="";
+  function generateRegex(){
+    const out=document.getElementById("regexOut");
+    if(initial==null){ out.innerHTML='<div class="nosel" style="margin-top:10px">Defina um estado inicial primeiro.</div>'; lastRegexStr=""; return; }
+    const re=faToRegex();
+    const str=(!re||re.t==='empty')?'∅':reRender(re,0);
+    lastRegexStr=str;
+    out.innerHTML=`<div class="regexbox">${escapeHtml(str)}</div>
+      <div style="display:flex;gap:7px;margin-top:8px"><button class="tg" id="copyRegex">Copiar</button></div>
+      <div class="renote">Obtida por <b>eliminação de estados</b> (via GNFA). Notação: <b>+</b> união, justaposição é concatenação, <b>*</b> fecho de Kleene, <b>ε</b> vazio, <b>∅</b> linguagem vazia. Atualiza com a máquina em tempo real.</div>`;
+    document.getElementById("copyRegex").onclick=function(){
+      try{ navigator.clipboard.writeText(lastRegexStr); this.textContent="Copiado ✓"; setTimeout(()=>{ this.textContent="Copiar"; },1200); }catch(e){}
+    };
+  }
+  document.getElementById("genRegex").onclick=()=>{ regexShown=true; generateRegex(); };
+
+  // ---------- Operações regulares: AFND -> AFD (subconjuntos) e minimização ----------
+  function faClosure(set){ const o=new Set(set),st=[...set]; while(st.length){const s=st.pop(); for(const t of trans) if(t.from===s&&t.sym===EPS&&!o.has(t.to)){o.add(t.to);st.push(t.to);}} return o; }
+  function faMoveSet(set,a){ const o=new Set(); for(const s of set) for(const t of trans) if(t.from===s&&t.sym===a) o.add(t.to); return o; }
+  function determinizeFA(){
+    const alpha=inputAlphabet(); const idLabel={}; states.forEach(s=>idLabel[s.id]=s.label);
+    const keyOf=set=>[...set].map(id=>idLabel[id]).sort().join(",");
+    const subset=set=>set.size?"{"+[...set].map(id=>idLabel[id]).sort().join(",")+"}":"∅";
+    const start=faClosure(new Set([initial])); const seen=new Map(), order=[];
+    const ensure=set=>{ const k=keyOf(set); if(!seen.has(k)){ seen.set(k,{set,name:"S"+order.length}); order.push(k); } return seen.get(k).name; };
+    ensure(start); const queue=[start], processed=new Set(), transDefs=[];
+    while(queue.length){ const S=queue.shift(), k=keyOf(S); if(processed.has(k))continue; processed.add(k); const Sn=ensure(S);
+      for(const a of alpha){ const T=faClosure(faMoveSet(S,a)); if(T.size===0)continue; const Tn=ensure(T); transDefs.push({from:Sn,to:Tn,sym:a}); if(!processed.has(keyOf(T))) queue.push(T); } }
+    const fset=new Set(states.filter(s=>finals.has(s.id)).map(s=>s.id));
+    const labels=order.map(k=>seen.get(k).name);
+    const finalLabels=order.filter(k=>[...seen.get(k).set].some(id=>fset.has(id))).map(k=>seen.get(k).name);
+    const mapping=order.map(k=>seen.get(k).name+" = "+subset(seen.get(k).set));
+    return { labels, transDefs, initialLabel: seen.get(keyOf(start)).name, finalLabels, mapping, alpha };
+  }
+  function currentDFAStruct(){
+    const Sigma=inputAlphabet(); const Q=states.map(s=>s.id); const delta={}; Q.forEach(q=>delta[q]={});
+    for(const t of trans){ if(t.sym===EPS) continue; if(delta[t.from][t.sym]===undefined) delta[t.from][t.sym]=t.to; }
+    return { Q, Sigma, delta, init:initial, F:new Set(states.filter(s=>finals.has(s.id)).map(s=>s.id)) };
+  }
+  function detToStruct(det){ const Sigma=det.alpha, Q=det.labels.slice(), delta={}; Q.forEach(q=>delta[q]={}); det.transDefs.forEach(t=>delta[t.from][t.sym]=t.to); return { Q, Sigma, delta, init:det.initialLabel, F:new Set(det.finalLabels) }; }
+  function minimizeDFA(D){
+    const Sigma=D.Sigma, TRAP="__trap__"; let Q=[...D.Q]; const delta={};
+    for(const q of Q){ delta[q]={}; for(const a of Sigma) delta[q][a]=(D.delta[q]&&D.delta[q][a]!==undefined)?D.delta[q][a]:TRAP; }
+    if(Q.some(q=>Sigma.some(a=>delta[q][a]===TRAP))){ Q.push(TRAP); delta[TRAP]={}; for(const a of Sigma) delta[TRAP][a]=TRAP; }
+    const F=new Set([...D.F]);
+    const reach=new Set([D.init]), st=[D.init]; while(st.length){ const u=st.pop(); for(const a of Sigma){ const v=delta[u][a]; if(v!==undefined&&!reach.has(v)){ reach.add(v); st.push(v); } } }
+    Q=Q.filter(q=>reach.has(q));
+    let parts=[]; const fin=Q.filter(q=>F.has(q)), non=Q.filter(q=>!F.has(q)); if(fin.length)parts.push(fin); if(non.length)parts.push(non);
+    let changed=true; while(changed){ changed=false; const idx={}; parts.forEach((g,i)=>g.forEach(q=>idx[q]=i)); const np=[];
+      for(const g of parts){ const b=new Map(); for(const q of g){ const sig=Sigma.map(a=>idx[delta[q][a]]).join(","); if(!b.has(sig))b.set(sig,[]); b.get(sig).push(q); } if(b.size>1)changed=true; for(const v of b.values()) np.push(v); } parts=np; }
+    const partOf={}; parts.forEach((g,i)=>g.forEach(q=>partOf[q]=i)); const initPart=partOf[D.init];
+    const mtrans={}; parts.forEach((g,i)=>{ mtrans[i]={}; for(const a of Sigma) mtrans[i][a]=partOf[delta[g[0]][a]]; });
+    const mfin=new Set(); parts.forEach((g,i)=>{ if(g.some(q=>F.has(q))) mfin.add(i); });
+    let trapPart=-1; parts.forEach((g,i)=>{ if(!mfin.has(i)&&Sigma.every(a=>mtrans[i][a]===i)) trapPart=i; });
+    const order=[], seen=new Set([initPart]), queue=[initPart]; while(queue.length){ const u=queue.shift(); order.push(u); for(const a of Sigma){ const v=mtrans[u][a]; if(!seen.has(v)){ seen.add(v); queue.push(v); } } }
+    parts.forEach((g,i)=>{ if(!seen.has(i)) order.push(i); });
+    const removeTrap=(trapPart>=0&&trapPart!==initPart); const keep=order.filter(i=>!(removeTrap&&i===trapPart));
+    const lab={}; keep.forEach((i,n)=>lab[i]="q"+n); const labels=keep.map(i=>lab[i]);
+    const transDefs=[]; for(const i of keep) for(const a of Sigma){ const j=mtrans[i][a]; if(removeTrap&&j===trapPart) continue; transDefs.push({from:lab[i],to:lab[j],sym:a}); }
+    return { labels, transDefs, initialLabel:lab[initPart], finalLabels:keep.filter(i=>mfin.has(i)).map(i=>lab[i]) };
+  }
+  function layoutByBFS(labels, transDefs, initialLabel){
+    const adj={}; labels.forEach(l=>adj[l]=[]); for(const t of transDefs){ if(adj[t.from]&&!adj[t.from].includes(t.to)) adj[t.from].push(t.to); }
+    const layer={}; layer[initialLabel]=0; const q=[initialLabel];
+    while(q.length){ const u=q.shift(); for(const v of (adj[u]||[])) if(layer[v]===undefined){ layer[v]=layer[u]+1; q.push(v); } }
+    let maxL=0; labels.forEach(l=>{ if(layer[l]===undefined) layer[l]=0; if(layer[l]>maxL)maxL=layer[l]; });
+    const byL={}; labels.forEach(l=>{ (byL[layer[l]]=byL[layer[l]]||[]).push(l); });
+    const W=stage.clientWidth||900, H=stage.clientHeight||520;
+    const dx=Math.min(210,(W-150)/Math.max(1,maxL)); const pos={};
+    for(let L=0;L<=maxL;L++){ const col=byL[L]||[]; const n=col.length; const dy=Math.min(120,(H-120)/Math.max(1,n));
+      col.forEach((l,i)=>{ pos[l]={ x:80+L*dx, y:H/2+(i-(n-1)/2)*dy }; }); }
+    return pos;
+  }
+  function rebuildFA(labels, transDefs, initialLabel, finalLabels){
+    machineType="fa"; const pos=layoutByBFS(labels, transDefs, initialLabel);
+    states=[]; trans=[]; finals=new Set(); nextId=0;
+    const idOf={};
+    for(const l of labels){ const id=uid(); idOf[l]={id}; states.push({id,x:Math.round(pos[l].x),y:Math.round(pos[l].y),label:l}); }
+    initial=idOf[initialLabel]?idOf[initialLabel].id:null;
+    for(const l of finalLabels) if(idOf[l]) finals.add(idOf[l].id);
+    for(const t of transDefs) if(idOf[t.from]&&idOf[t.to]) trans.push({id:uid(),from:idOf[t.from].id,to:idOf[t.to].id,sym:t.sym});
+    selected=null; sim=null; grammarShown=false; regexShown=false;
+    document.getElementById("grammarOut").innerHTML=""; document.getElementById("regexOut").innerHTML="";
+    document.getElementById("verdict").className="verdict"; document.getElementById("batchOut").innerHTML="";
+    applyModeUI(); render(); renderProps(); updateHint();
+  }
+  document.getElementById("opDet").onclick=()=>{
+    if(initial==null){ flashHint("Defina um estado inicial primeiro.",true); return; }
+    const before=states.length; const det=determinizeFA();
+    rebuildFA(det.labels, det.transDefs, det.initialLabel, det.finalLabels);
+    document.getElementById("opNote").innerHTML=`<div style="margin-top:10px">AFD por <b>construção de subconjuntos</b>: ${before} &rarr; ${det.labels.length} estados. Cada estado é um subconjunto dos estados do AFND:</div><div class="mapbox">${det.mapping.map(escapeHtml).join("<br>")}</div>`;
+  };
+  document.getElementById("opMin").onclick=()=>{
+    if(initial==null){ flashHint("Defina um estado inicial primeiro.",true); return; }
+    const before=states.length; const dfa=isDeterministic();
+    const D = dfa? currentDFAStruct() : detToStruct(determinizeFA());
+    const res=minimizeDFA(D);
+    rebuildFA(res.labels, res.transDefs, res.initialLabel, res.finalLabels);
+    document.getElementById("opNote").innerHTML=`<div style="margin-top:10px">${dfa?"AFD":"AFND determinizado e então"} <b>minimizado</b> por refinamento de partições (Myhill–Nerode): ${before} &rarr; ${res.labels.length} estados.</div>`;
+  };
+
+  // ---------- ER -> autômato (Thompson) ----------
+  function parseRE(str){
+    const s=str.replace(/\s+/g,''); let i=0;
+    const pk=()=>s[i], eof=()=>i>=s.length;
+    function U(){ let n=Cc(); while(pk()==='+'||pk()==='|'){ i++; n={t:'union',a:n,b:Cc()}; } return n; }
+    function Cc(){ let n=null; while(!eof()&&pk()!=='+'&&pk()!=='|'&&pk()!==')'){ const f=St(); n=n?{t:'concat',a:n,b:f}:f; } return n||{t:'eps'}; }
+    function St(){ let n=At(); while(pk()==='*'){ i++; n={t:'star',x:n}; } return n; }
+    function At(){ const c=pk(); if(c==='('){ i++; const n=U(); if(pk()===')') i++; return n; } if(c==='ε'||c==='λ'){ i++; return {t:'eps'}; } if(c==='∅'){ i++; return {t:'empty'}; } i++; return {t:'sym',c}; }
+    return U();
+  }
+  function thompsonBuild(ast){
+    let cnt=0; const nst=()=>"q"+(cnt++); const T=[];
+    function b(n){
+      if(n.t==='sym'){ const s=nst(),a=nst(); T.push({from:s,to:a,sym:n.c}); return {s,a}; }
+      if(n.t==='eps'){ const s=nst(),a=nst(); T.push({from:s,to:a,sym:EPS}); return {s,a}; }
+      if(n.t==='empty'){ const s=nst(),a=nst(); return {s,a}; }
+      if(n.t==='concat'){ const A=b(n.a),B=b(n.b); T.push({from:A.a,to:B.s,sym:EPS}); return {s:A.s,a:B.a}; }
+      if(n.t==='union'){ const A=b(n.a),B=b(n.b); const s=nst(),a=nst(); T.push({from:s,to:A.s,sym:EPS},{from:s,to:B.s,sym:EPS},{from:A.a,to:a,sym:EPS},{from:B.a,to:a,sym:EPS}); return {s,a}; }
+      const A=b(n.x); const s=nst(),a=nst(); T.push({from:s,to:A.s,sym:EPS},{from:s,to:a,sym:EPS},{from:A.a,to:A.s,sym:EPS},{from:A.a,to:a,sym:EPS}); return {s,a};
+    }
+    const r=b(ast); const labels=[]; for(let k=0;k<cnt;k++) labels.push("q"+k);
+    return { labels, transDefs:T, initialLabel:r.s, finalLabels:[r.a] };
+  }
+  document.getElementById("buildRE").onclick=()=>{
+    const raw=document.getElementById("reInput").value;
+    let ast; try{ ast=parseRE(raw); }catch(e){ flashHint("Não consegui interpretar a expressão.",true); return; }
+    const nfa=thompsonBuild(ast);
+    rebuildFA(nfa.labels, nfa.transDefs, nfa.initialLabel, nfa.finalLabels);
+    document.getElementById("reBuildNote").innerHTML=`AFND-ε construído por <b>Thompson</b>: ${nfa.labels.length} estados. Use <b>Determinizar</b> e <b>Minimizar AFD</b> para obter o AFD equivalente.`;
+  };
+  document.getElementById("reInput").addEventListener("keydown",e=>{ if(e.key==="Enter") document.getElementById("buildRE").click(); });
+
+  // ---------- comparar & operar 2 autômatos ----------
+  let slotA=null, slotB=null;
+  function snapshotFA(){
+    const map={}; states.forEach((s,i)=>map[s.id]="x"+i);
+    return { trans: trans.map(t=>({from:map[t.from],to:map[t.to],sym:t.sym})), initial: initial!=null?map[initial]:null, finals: states.filter(s=>finals.has(s.id)).map(s=>map[s.id]), n: states.length };
+  }
+  function snapAlpha(snap){ return [...new Set(snap.trans.filter(t=>t.sym!==EPS).map(t=>t.sym))].sort(); }
+  function nfaToDFA(snap){
+    const alpha=snapAlpha(snap);
+    const clos=set=>{ const o=new Set(set),st=[...set]; while(st.length){ const s=st.pop(); for(const t of snap.trans) if(t.from===s&&t.sym===EPS&&!o.has(t.to)){o.add(t.to);st.push(t.to);} } return o; };
+    const mvv=(set,a)=>{ const o=new Set(); for(const s of set) for(const t of snap.trans) if(t.from===s&&t.sym===a) o.add(t.to); return o; };
+    const key=set=>[...set].sort().join(",");
+    const Fset=new Set(snap.finals);
+    const start=clos(new Set([snap.initial])), sk=key(start);
+    const delta={}, F=new Set(), setOf=new Map([[sk,start]]), Q=[sk], queue=[sk];
+    if([...start].some(x=>Fset.has(x))) F.add(sk);
+    while(queue.length){ const k=queue.shift(), S=setOf.get(k); delta[k]={};
+      for(const a of alpha){ const T=clos(mvv(S,a)); if(T.size===0) continue; const tk=key(T);
+        if(!setOf.has(tk)){ setOf.set(tk,T); Q.push(tk); queue.push(tk); if([...T].some(x=>Fset.has(x))) F.add(tk); }
+        delta[k][a]=tk; } }
+    return { Q, Sigma:alpha, delta, init:sk, F };
+  }
+  function completeOver(D,Sigma){
+    const TRAP="__trap__"; const Q=[...D.Q], delta={}; let need=false;
+    for(const q of Q){ delta[q]={}; for(const a of Sigma){ const v=D.delta[q]&&D.delta[q][a]; if(v!==undefined) delta[q][a]=v; else { delta[q][a]=TRAP; need=true; } } }
+    if(need){ Q.push(TRAP); delta[TRAP]={}; for(const a of Sigma) delta[TRAP][a]=TRAP; }
+    return { Q, Sigma, delta, init:D.init, F:new Set([...D.F]) };
+  }
+  function prep2(sa,sb){ const da0=nfaToDFA(sa), db0=nfaToDFA(sb); const Sigma=[...new Set([...da0.Sigma,...db0.Sigma])].sort(); return { da:completeOver(da0,Sigma), db:completeOver(db0,Sigma), Sigma }; }
+  function productStruct(da,db,Sigma,acc){
+    const start=da.init+"|"+db.init; const delta={}, F=new Set(), Q=[start], seen=new Set([start]), queue=[[da.init,db.init]];
+    while(queue.length){ const [a,b]=queue.shift(), k=a+"|"+b; delta[k]={}; if(acc(da.F.has(a),db.F.has(b))) F.add(k);
+      for(const x of Sigma){ const na=da.delta[a][x], nb=db.delta[b][x], nk=na+"|"+nb; if(!seen.has(nk)){ seen.add(nk); Q.push(nk); queue.push([na,nb]); } delta[k][x]=nk; } }
+    return { Q, Sigma, delta, init:start, F };
+  }
+  function equivDFA(sa,sb){
+    const {da,db,Sigma}=prep2(sa,sb); const acc=(x,y)=>x!==y; const start=da.init+"|"+db.init;
+    if(acc(da.F.has(da.init),db.F.has(db.init))) return {equal:false,witness:""};
+    const seen=new Set([start]), par=new Map(), queue=[[da.init,db.init,start]];
+    while(queue.length){ const [a,b,k]=queue.shift();
+      for(const x of Sigma){ const na=da.delta[a][x], nb=db.delta[b][x], nk=na+"|"+nb;
+        if(!seen.has(nk)){ seen.add(nk); par.set(nk,{prev:k,sym:x}); if(acc(da.F.has(na),db.F.has(nb))){ let w="",c=nk; while(par.has(c)){ const p=par.get(c); w=p.sym+w; c=p.prev; } return {equal:false,witness:w}; } queue.push([na,nb,nk]); } } }
+    return {equal:true};
+  }
+  function opTwoNote(html,warn){ document.getElementById("opTwoNote").innerHTML='<div style="margin-top:10px'+(warn?';color:var(--reject)':'')+'">'+html+'</div>'; }
+  function updateSlots(){ document.getElementById("slotStatus").innerHTML=`A: ${slotA?slotA.n+" estados":"—"} · B: ${slotB?slotB.n+" estados":"—"}`; }
+  document.getElementById("storeA").onclick=()=>{ if(initial==null){ flashHint("Defina um estado inicial primeiro.",true); return; } slotA=snapshotFA(); updateSlots(); opTwoNote("Autômato atual guardado como <b>A</b>."); };
+  document.getElementById("storeB").onclick=()=>{ if(initial==null){ flashHint("Defina um estado inicial primeiro.",true); return; } slotB=snapshotFA(); updateSlots(); opTwoNote("Autômato atual guardado como <b>B</b>."); };
+  function twoOp(acc,name){
+    if(!slotA||!slotB){ opTwoNote("Guarde os autômatos <b>A</b> e <b>B</b> primeiro (desenhe cada um e clique em Guardar).",true); return; }
+    const {da,db,Sigma}=prep2(slotA,slotB);
+    const res=minimizeDFA(productStruct(da,db,Sigma,acc));
+    rebuildFA(res.labels,res.transDefs,res.initialLabel,res.finalLabels);
+    opTwoNote(`<b>${name}</b> construído por produto e minimizado: ${res.labels.length} estados. Está na tela como o autômato atual.`);
+  }
+  document.getElementById("opUnion").onclick=()=>twoOp((x,y)=>x||y,"A ∪ B");
+  document.getElementById("opInter").onclick=()=>twoOp((x,y)=>x&&y,"A ∩ B");
+  document.getElementById("opDiff").onclick=()=>twoOp((x,y)=>x&&!y,"A − B");
+  document.getElementById("opEquiv").onclick=()=>{
+    if(!slotA||!slotB){ opTwoNote("Guarde os autômatos <b>A</b> e <b>B</b> primeiro.",true); return; }
+    const r=equivDFA(slotA,slotB);
+    if(r.equal) opTwoNote("<b style='color:var(--accept)'>A e B são equivalentes ✓</b> — reconhecem a mesma linguagem.");
+    else { const w=r.witness===""?"ε (cadeia vazia)":"«"+escapeHtml(r.witness)+"»"; document.getElementById("testStr").value=r.witness; opTwoNote(`<b style="color:var(--reject)">A e B não são equivalentes.</b> Contraexemplo: ${w} — aceita por um e rejeitada pelo outro (coloquei no campo de teste).`); }
+  };
+  document.getElementById("opComp").onclick=()=>{
+    if(initial==null){ flashHint("Defina um estado inicial primeiro.",true); return; }
+    const D=nfaToDFA(snapshotFA()), C=completeOver(D,D.Sigma);
+    const F=new Set(C.Q.filter(q=>!C.F.has(q)));
+    const res=minimizeDFA({Q:C.Q,Sigma:C.Sigma,delta:C.delta,init:C.init,F});
+    rebuildFA(res.labels,res.transDefs,res.initialLabel,res.finalLabels);
+    opTwoNote(`Complemento (¬L) do autômato atual, sobre Σ={${C.Sigma.join(",")||"∅"}}, minimizado: ${res.labels.length} estados.`);
+  };
+
   // ---------- tools ----------
   function setTool(t){
     tool=t;
@@ -1232,7 +1590,7 @@
       if(selected.type==="state") deleteState(selected.id);
       else { trans=trans.filter(t=>!(t.from===selected.from&&t.to===selected.to)); selected=null; sim=null; render(); renderProps(); }
     }
-    if(e.key==="Escape"){ if(document.getElementById("tutModal").classList.contains("open")){ closeTutorial(); return; } hideFloat(); selected=null; render(); renderProps(); }
+    if(e.key==="Escape"){ if(document.getElementById("exModal").classList.contains("open")){ closeExModal(); return; } if(document.getElementById("tutModal").classList.contains("open")){ closeTutorial(); return; } hideFloat(); selected=null; render(); renderProps(); }
   });
 
   function escapeHtml(s){ return String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
@@ -1267,19 +1625,21 @@
     states=d.states||[]; trans=d.trans||[]; initial=d.initial??null;
     finals=new Set(d.finals||[]); nextId=d.nextId||states.length;
     pdaInit=d.pdaInit??"Z"; pdaAccept=d.pdaAccept||"final";
-    selected=null; sim=null; grammarShown=false;
+    selected=null; sim=null; grammarShown=false; regexShown=false;
     document.getElementById("verdict").className="verdict";
     document.getElementById("batchOut").innerHTML="";
     document.getElementById("grammarOut").innerHTML="";
+    document.getElementById("regexOut").innerHTML="";
     document.getElementById("initStack").value=pdaInit;
     document.querySelectorAll("#pdaConfig [data-acc]").forEach(x=>x.classList.toggle("on",x.dataset.acc===pdaAccept));
     applyModeUI(); render(); renderProps(); renderTape(); updateHint();
   }
   document.getElementById("clear").onclick=()=>{
-    states=[];trans=[];initial=null;finals=new Set();nextId=0;selected=null;sim=null;grammarShown=false;
+    states=[];trans=[];initial=null;finals=new Set();nextId=0;selected=null;sim=null;grammarShown=false;regexShown=false;
     document.getElementById("verdict").className="verdict";
     document.getElementById("batchOut").innerHTML="";
     document.getElementById("grammarOut").innerHTML="";
+    document.getElementById("regexOut").innerHTML="";
     document.getElementById("testStr").value=""; document.getElementById("batchIn").value="";
     render();renderProps();renderTape();updateHint();
   };
@@ -1330,6 +1690,11 @@
     const moore=machineType==="moore", mealy=machineType==="mealy";
     document.getElementById("pdaConfig").style.display=pda?"block":"none";
     document.getElementById("grammarSec").style.display=fa?"block":"none";
+    document.getElementById("regexSec").style.display=fa?"block":"none";
+    document.getElementById("opsSec").style.display=fa?"block":"none";
+    document.getElementById("thompsonSec").style.display=fa?"block":"none";
+    document.getElementById("twoSec").style.display=fa?"block":"none";
+    if(!fa){ const on=document.getElementById("opNote"); if(on) on.innerHTML=""; }
     document.querySelectorAll("#seg button").forEach(b=>b.classList.toggle("on",b.dataset.m===machineType));
     const sel=document.getElementById("examples");
     const opts = fa?FA_OPTS : pda?PDA_OPTS : tm?TM_OPTS : moore?MOORE_OPTS : MEALY_OPTS;
@@ -1342,8 +1707,10 @@
     if(machineType==="fa") FA_EX.aabb(); else if(machineType==="pda") PDA_EX.pal(); else if(machineType==="tm") TM_EX.anbn(); else if(machineType==="moore") MOORE_EX.parity(); else MEALY_EX.complement();
   }
   function switchMode(m){
-    machineType=m; grammarShown=false;
+    if(exActive) hideExBar();
+    machineType=m; grammarShown=false; regexShown=false;
     document.getElementById("grammarOut").innerHTML="";
+    document.getElementById("regexOut").innerHTML="";
     document.getElementById("verdict").className="verdict";
     document.getElementById("batchOut").innerHTML="";
     applyModeUI(); loadDefaultExample(); renderTape();
@@ -1430,6 +1797,157 @@
   document.getElementById("tutLoad").onclick=()=>{ switchMode(curTut); closeTutorial(); };
   document.getElementById("tutModal").addEventListener("click",e=>{ if(e.target.id==="tutModal") closeTutorial(); });
   document.querySelectorAll("#tutTabs button").forEach(b=>b.onclick=()=>showTutorial(b.dataset.t));
+
+  // ---------- MODO EXERCÍCIO ----------
+  const FTe=a=>a.map(([f,t,s])=>({from:f,to:t,sym:s}));
+  const BUILTIN_EX=[
+    {id:"fa-ab",title:"Contém 'ab'",machine:"fa",prompt:"Construa um AF sobre {a,b} que aceite exatamente as cadeias que contêm 'ab' como subcadeia.",reference:{trans:FTe([["s0","s1","a"],["s0","s0","b"],["s1","s1","a"],["s1","s2","b"],["s2","s2","a"],["s2","s2","b"]]),initial:"s0",finals:["s2"]}},
+    {id:"fa-evena",title:"Número par de a's",machine:"fa",prompt:"AF sobre {a,b} que aceite as cadeias com um número par de a's (zero conta como par).",reference:{trans:FTe([["e","o","a"],["o","e","a"],["e","e","b"],["o","o","b"]]),initial:"e",finals:["e"]}},
+    {id:"fa-ends01",title:"Termina em '01'",machine:"fa",prompt:"AF sobre {0,1} que aceite as cadeias terminadas em '01'.",reference:{trans:FTe([["q0","q1","0"],["q0","q0","1"],["q1","q1","0"],["q1","q2","1"],["q2","q1","0"],["q2","q0","1"]]),initial:"q0",finals:["q2"]}},
+    {id:"fa-noaa",title:"Sem dois a's seguidos",machine:"fa",prompt:"AF sobre {a,b} que aceite as cadeias que NÃO contêm 'aa'.",reference:{trans:FTe([["q0","q1","a"],["q0","q0","b"],["q1","q0","b"]]),initial:"q0",finals:["q0","q1"]}},
+    {id:"fa-div3",title:"Binário divisível por 3",machine:"fa",prompt:"AF sobre {0,1} que aceite representações binárias (bit mais significativo à esquerda) de números divisíveis por 3.",reference:{trans:FTe([["r0","r0","0"],["r0","r1","1"],["r1","r2","0"],["r1","r0","1"],["r2","r1","0"],["r2","r2","1"]]),initial:"r0",finals:["r0"]}},
+    {id:"fa-mult3a",title:"Nº de a's múltiplo de 3",machine:"fa",prompt:"AF sobre {a,b} que aceite as cadeias cujo número de a's é múltiplo de 3.",reference:{trans:FTe([["m0","m1","a"],["m1","m2","a"],["m2","m0","a"],["m0","m0","b"],["m1","m1","b"],["m2","m2","b"]]),initial:"m0",finals:["m0"]}},
+    {id:"pda-anbn",title:"a^n b^n",machine:"pda",prompt:"Autômato de pilha que aceite { a^n b^n | n ≥ 1 }.",accept:["ab","aabb","aaabbb","aaaabbbb"],reject:["","a","b","aab","abb","ba","aabbb","aaabb"]},
+    {id:"tm-anbncn",title:"a^n b^n c^n",machine:"tm",prompt:"Máquina de Turing que aceite { a^n b^n c^n | n ≥ 1 }.",accept:["abc","aabbcc","aaabbbccc"],reject:["","ab","aabbc","abcc","aabbccc","acb"]},
+    {id:"mo-par",title:"Moore: paridade de a's",machine:"moore",prompt:"Máquina de Moore sobre {a,b} que emita, a cada estado, 0 se o nº de a's lidos é par e 1 se é ímpar (a saída tem n+1 símbolos).",outputs:[{in:"",out:"0"},{in:"a",out:"01"},{in:"aa",out:"010"},{in:"aab",out:"0100"},{in:"baa",out:"0010"}]},
+    {id:"me-comp",title:"Mealy: complemento binário",machine:"mealy",prompt:"Máquina de Mealy sobre {0,1} que emita o complemento de cada bit lido.",outputs:[{in:"0",out:"1"},{in:"1",out:"0"},{in:"0110",out:"1001"},{in:"1010",out:"0101"}]}
+  ];
+  const exStore={ get(k){ try{ return JSON.parse(localStorage.getItem(k)); }catch(e){ return null; } }, set(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); }catch(e){} } };
+  let solved = exStore.get("automata_solved") || {};
+  let importedEx = exStore.get("automata_imported") || [];
+  let activeEx=null, exActive=false, exTab="praticar", exSel=null, lastCreatedEx=null;
+  const modeTag=m=>({fa:"AF",pda:"AP",tm:"MT",moore:"MO",mealy:"ME"}[m]||m);
+  const modeName=m=>({fa:"Autômato Finito",pda:"Autômato de Pilha",tm:"Máquina de Turing",moore:"Moore",mealy:"Mealy"}[m]||m);
+  const allExercises=()=>BUILTIN_EX.concat(importedEx);
+  function exDownload(data,name,type){ const b=new Blob([data],{type}); const a=document.createElement("a"); a.href=URL.createObjectURL(b); a.download=name; a.click(); URL.revokeObjectURL(a.href); }
+
+  function snapNFAaccepts(snap,str){
+    const T=snap.trans; const cl=set=>{ const o=new Set(set),st=[...set]; while(st.length){ const s=st.pop(); for(const t of T) if(t.from===s&&t.sym===EPS&&!o.has(t.to)){o.add(t.to);st.push(t.to);} } return o; };
+    let cur=cl(new Set([snap.initial])); const F=new Set(snap.finals);
+    for(const c of str.split("")){ const n=new Set(); for(const s of cur) for(const t of T) if(t.from===s&&t.sym===c) n.add(t.to); cur=cl(n); }
+    for(const f of F) if(cur.has(f)) return true; return false;
+  }
+  function checkExercise(ex){
+    if(ex.machine!==machineType) return {ok:false,msg:`Este exercício é do tipo <b>${modeName(ex.machine)}</b>. Selecione o modo ${modeTag(ex.machine)} no topo.`};
+    if(ex.reference && machineType==="fa"){
+      if(initial==null) return {ok:false,msg:"Defina um estado inicial."};
+      const r=equivDFA(snapshotFA(), ex.reference);
+      if(r.equal) return {ok:true,msg:"Correto! Reconhece exatamente a linguagem pedida. ✓"};
+      const w=r.witness===""?"ε (cadeia vazia)":"«"+escapeHtml(r.witness)+"»";
+      const inRef=snapNFAaccepts(ex.reference,r.witness);
+      return {ok:false,msg:`Ainda não. Contraexemplo: ${w} — ${inRef?"<b>deveria ser aceita</b>, mas seu autômato rejeita":"<b>deveria ser rejeitada</b>, mas seu autômato aceita"}.`};
+    }
+    if(ex.outputs){
+      for(const p of ex.outputs){ const r=transduce(tokenize(p.in)); if(!r.complete) return {ok:false,msg:`Ainda não. Para a entrada «${p.in||"ε"}» a máquina não produziu saída completa.`}; if(r.output!==p.out) return {ok:false,msg:`Ainda não. Para «${p.in||"ε"}» esperava «${escapeHtml(p.out||"ε")}», obteve «${escapeHtml(r.output||"ε")}».`}; }
+      return {ok:true,msg:"Correto! Todas as saídas conferem. ✓"};
+    }
+    if((machineType==="fa"||machineType==="pda"||machineType==="tm") && initial==null) return {ok:false,msg:"Defina um estado inicial."};
+    for(const s of (ex.accept||[])) if(!acceptsAny(tokenize(s))) return {ok:false,msg:`Ainda não. «${s||"ε"}» <b>deveria ser aceita</b>, mas sua máquina rejeita.`};
+    for(const s of (ex.reject||[])) if(acceptsAny(tokenize(s))) return {ok:false,msg:`Ainda não. «${s||"ε"}» <b>deveria ser rejeitada</b>, mas sua máquina aceita.`};
+    return {ok:true,msg:"Correto! Passou em todos os testes. ✓"};
+  }
+
+  function startExercise(ex){
+    if(!ex) return;
+    activeEx=ex; machineType=ex.machine;
+    states=[]; trans=[]; initial=null; finals=new Set(); nextId=0; selected=null; sim=null; grammarShown=false; regexShown=false;
+    document.getElementById("grammarOut").innerHTML=""; document.getElementById("regexOut").innerHTML="";
+    document.getElementById("verdict").className="verdict"; document.getElementById("batchOut").innerHTML="";
+    document.getElementById("testStr").value=""; document.getElementById("batchIn").value="";
+    if(ex.machine==="pda"){ pdaInit="Z"; pdaAccept="final"; document.getElementById("initStack").value="Z"; document.querySelectorAll("#pdaConfig [data-acc]").forEach(x=>x.classList.toggle("on",x.dataset.acc==="final")); }
+    applyModeUI(); render(); renderProps(); updateHint();
+    document.getElementById("exBarTitle").textContent=ex.title;
+    document.getElementById("exBarPrompt").textContent=ex.prompt;
+    document.getElementById("exFeedback").textContent="";
+    document.getElementById("exBar").classList.add("on");
+    exActive=true; document.getElementById("hint").style.top="76px";
+    closeExModal();
+  }
+  function hideExBar(){ document.getElementById("exBar").classList.remove("on"); exActive=false; activeEx=null; document.getElementById("hint").style.top="14px"; }
+  document.getElementById("exExit").onclick=hideExBar;
+  document.getElementById("exCheck").onclick=()=>{
+    if(!activeEx) return;
+    const r=checkExercise(activeEx);
+    const fb=document.getElementById("exFeedback");
+    fb.innerHTML=r.msg; fb.style.color=r.ok?"#7ee3b8":"#ff9d9d";
+    if(r.ok && !solved[activeEx.id]){ solved[activeEx.id]=true; exStore.set("automata_solved",solved); }
+  };
+
+  function batteryFromCurrent(){
+    const alpha=inputAlphabet(); let frontier=[""]; const allS=[""];
+    for(let l=1;l<=5 && allS.length<300;l++){ const nx=[]; for(const s of frontier) for(const c of alpha) nx.push(s+c); allS.push(...nx); frontier=nx; }
+    if(machineType==="moore"||machineType==="mealy"){ const outs=[]; for(const s of allS){ const r=transduce(tokenize(s)); if(r.complete) outs.push({in:s,out:r.output}); } return {outputs:outs.slice(0,80)}; }
+    const acc=[],rej=[]; for(const s of allS){ (acceptsAny(tokenize(s))?acc:rej).push(s); } return {accept:acc.slice(0,60),reject:rej.slice(0,60)};
+  }
+  function makeExerciseFromCurrent(title,prompt){
+    const ex={ id:"u"+Date.now(), title, prompt, machine:machineType, user:true };
+    if(machineType==="fa"){ if(initial==null) return null; ex.reference=snapshotFA(); }
+    else Object.assign(ex, batteryFromCurrent());
+    return ex;
+  }
+  function exCreateFromCurrent(){
+    const title=(document.getElementById("exNewTitle").value||"").trim();
+    const prompt=(document.getElementById("exNewPrompt").value||"").trim();
+    const note=document.getElementById("exProfNote");
+    if(!title||!prompt){ note.innerHTML='<div style="margin-top:8px;color:var(--reject)">Preencha o título e o enunciado.</div>'; return; }
+    if(machineType==="fa" && initial==null){ note.innerHTML='<div style="margin-top:8px;color:var(--reject)">Defina um estado inicial no autômato-gabarito.</div>'; return; }
+    const ex=makeExerciseFromCurrent(title,prompt); if(!ex){ note.innerHTML='<div style="margin-top:8px;color:var(--reject)">Não consegui capturar o gabarito.</div>'; return; }
+    importedEx.push(ex); exStore.set("automata_imported",importedEx); lastCreatedEx=ex;
+    note.innerHTML=`<div style="margin-top:8px;color:var(--accept)">Exercício “${escapeHtml(title)}” criado e adicionado à lista de Praticar${machineType==="fa"?" (correção por equivalência)":" (bateria amostrada da sua máquina)"}.</div>`;
+  }
+  function exExportLast(){ if(!lastCreatedEx){ document.getElementById("exProfNote").innerHTML='<div style="margin-top:8px;color:var(--reject)">Crie um exercício primeiro.</div>'; return; } exDownload(JSON.stringify(lastCreatedEx,null,2), (lastCreatedEx.title||"exercicio").replace(/[^\w]+/g,"_")+".json","application/json"); }
+  function exportProgressCSV(){
+    const list=allExercises();
+    const rows=[["exercicio","tipo","status"]].concat(list.map(e=>[e.title,modeTag(e.machine),solved[e.id]?"resolvido":"pendente"]));
+    exDownload(rows.map(r=>r.map(c=>'"'+String(c).replace(/"/g,'""')+'"').join(",")).join("\n"),"progresso.csv","text/csv");
+  }
+
+  function renderExModal(){
+    document.querySelectorAll("#exTabs button").forEach(b=>b.classList.toggle("on",b.dataset.x===exTab));
+    const body=document.getElementById("exModalBody");
+    if(exTab==="praticar"){
+      const list=allExercises();
+      let html='<div class="exlist">';
+      for(const ex of list) html+=`<div class="exitem${exSel===ex.id?' sel':''}" data-ex="${ex.id}"><span class="extag">${modeTag(ex.machine)}</span><span class="exname">${escapeHtml(ex.title)}</span>${solved[ex.id]?'<span class="exdone">✓ resolvido</span>':''}</div>`;
+      html+='</div>';
+      const sel=list.find(e=>e.id===exSel);
+      if(sel) html+=`<div class="exprompt-box">${escapeHtml(sel.prompt)}</div><div style="margin-top:12px"><button class="run-btn" id="exStartBtn" style="background:var(--primary);width:100%;justify-content:center">Começar este exercício</button></div>`;
+      else html+='<div class="nosel" style="margin-top:12px">Selecione um exercício da lista para ver o enunciado.</div>';
+      body.innerHTML=html;
+      body.querySelectorAll("[data-ex]").forEach(el=>el.onclick=()=>{ exSel=el.dataset.ex; renderExModal(); });
+      const sb=document.getElementById("exStartBtn"); if(sb) sb.onclick=()=>startExercise(sel);
+    } else {
+      body.innerHTML=`
+        <p style="font-size:13.5px;line-height:1.55">Monte na tela a máquina que reconhece (ou produz) a resposta certa e gere um exercício a partir dela. Para <b>AF</b>, a correção usa <b>equivalência exata</b>; para os demais tipos, uma <b>bateria de testes</b> amostrada da sua máquina (cadeias de até 5 símbolos).</p>
+        <div class="label" style="margin-top:8px">Título</div>
+        <div class="field"><input type="text" id="exNewTitle" placeholder="Ex.: Cadeias que contêm 'ab'"></div>
+        <div class="label">Enunciado</div>
+        <textarea class="batch-in" id="exNewPrompt" placeholder="Descreva o que o aluno deve construir…"></textarea>
+        <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
+          <button class="run-btn" id="exCreate">Criar do autômato atual (${modeTag(machineType)})</button>
+          <button class="btn" id="exExportOne">Exportar último (.json)</button>
+        </div>
+        <div id="exProfNote" class="renote"></div>`;
+      document.getElementById("exCreate").onclick=exCreateFromCurrent;
+      document.getElementById("exExportOne").onclick=exExportLast;
+    }
+    const n=allExercises().length, s=allExercises().filter(e=>solved[e.id]).length;
+    document.getElementById("exProgress").textContent=`${s} de ${n} resolvidos`;
+  }
+  function openExModal(){ exSel=exSel||(activeEx?activeEx.id:null); renderExModal(); document.getElementById("exModal").classList.add("open"); }
+  function closeExModal(){ document.getElementById("exModal").classList.remove("open"); }
+  document.getElementById("exBtn").onclick=openExModal;
+  document.getElementById("exModalClose").onclick=closeExModal;
+  document.getElementById("exModalDone").onclick=closeExModal;
+  document.getElementById("exModal").addEventListener("click",e=>{ if(e.target.id==="exModal") closeExModal(); });
+  document.querySelectorAll("#exTabs button").forEach(b=>b.onclick=()=>{ exTab=b.dataset.x; renderExModal(); });
+  document.getElementById("exImport").onclick=()=>document.getElementById("exFile").click();
+  document.getElementById("exFile").onchange=function(){
+    const f=this.files[0]; if(!f) return; const r=new FileReader();
+    r.onload=()=>{ try{ let d=JSON.parse(r.result); const arr=Array.isArray(d)?d:[d]; for(const ex of arr){ if(ex&&ex.machine&&ex.title){ ex.user=true; if(!ex.id) ex.id="u"+Date.now()+Math.random().toString(36).slice(2,5); importedEx.push(ex); } } exStore.set("automata_imported",importedEx); exTab="praticar"; renderExModal(); }catch(e){ flashHint("Arquivo de exercício inválido.",true); } };
+    r.readAsText(f); this.value="";
+  };
+  document.getElementById("exCSV").onclick=exportProgressCSV;
 
   // ---------- example builders ----------
   function mkFA(sts,init,fin,ts){
